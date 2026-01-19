@@ -2,99 +2,114 @@
 
 import { useFormContext } from "react-hook-form";
 import { cn } from "@/lib/utils";
-
-const FABRICS = [
-    { id: "cotton", name: "Premium Cotton", desc: "Soft, breathable, durable (180gsm)" },
-    { id: "silk", name: "Organic Silk", desc: "Luxurious sheen, lightweight" },
-    { id: "linen", name: "French Linen", desc: "Textured, airy, summer essential" },
-    { id: "denim", name: "Japanese Denim", desc: "Heavyweight, structured (14oz)" },
-];
-
-const COLORS = [
-    { id: "midnight", name: "Midnight Black", hex: "#000000" },
-    { id: "cloud", name: "Cloud White", hex: "#ffffff" },
-    { id: "navy", name: "Deep Navy", hex: "#1a237e" },
-    { id: "olive", name: "Olive Green", hex: "#33691e" },
-    { id: "burgundy", name: "Burgundy", hex: "#880e4f" },
-];
+import { Calendar, AlertCircle } from "lucide-react";
 
 export function SpecForm() {
-    const { register, watch, setValue } = useFormContext();
-    const selectedFabric = watch("fabric");
-    const selectedColor = watch("color");
+    const { register, watch, setValue, formState: { errors } } = useFormContext();
+    const urgency = watch("urgency");
+    const fabricSource = watch("fabricSource");
+    const budgetRange = watch("budgetRange");
 
     return (
-        <div className="space-y-8 animate-in slide-in-from-right-8 fade-in duration-500">
-            <div className="text-center space-y-2 mb-8">
-                <h2 className="text-2xl font-bold font-heading">Specifications</h2>
-                <p className="text-muted-foreground">Select your premium materials.</p>
+        <div className="space-y-10 animate-in slide-in-from-right-8 fade-in duration-500 max-w-2xl mx-auto">
+            <div className="text-center space-y-2">
+                <h2 className="text-2xl font-bold font-heading text-white">Logistics</h2>
+                <p className="text-slate-400">Timeline and budget help us find the right match.</p>
             </div>
 
-            {/* Fabric Selection */}
+            {/* Timeline / Urgency */}
             <div className="space-y-4">
-                <label className="text-sm font-medium text-white/70 uppercase tracking-wider">Fabric Type</label>
-                <div className="grid sm:grid-cols-2 gap-4">
-                    {FABRICS.map((fabric) => (
-                        <div
-                            key={fabric.id}
-                            onClick={() => setValue("fabric", fabric.id)}
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                    When do you need it? <span className="text-red-400">*</span>
+                </label>
+                <div className="grid gap-3">
+                    {[
+                        { id: 'flexible', label: 'Flexible', desc: 'No rush (Best Price)', icon: '📅' },
+                        { id: 'standard', label: 'Standard', desc: '2-3 Weeks', icon: '🗓️' },
+                        { id: 'urgent', label: 'Urgent', desc: '< 1 Week (Express Fee)', icon: '⚡' },
+                    ].map(opt => (
+                        <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => setValue("urgency", opt.id, { shouldValidate: true })}
                             className={cn(
-                                "cursor-pointer rounded-xl p-4 border transition-all duration-200 flex items-start justify-between",
-                                selectedFabric === fabric.id
-                                    ? "border-accent bg-accent/10 shadow-[0_0_15px_-5px_var(--accent)]"
-                                    : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+                                "flex items-center gap-4 p-4 rounded-xl border transition-all text-left",
+                                urgency === opt.id
+                                    ? "bg-indigo-500/20 border-indigo-500"
+                                    : "bg-white/5 border-white/10 hover:bg-white/10"
                             )}
                         >
+                            <span className="text-xl">{opt.icon}</span>
                             <div>
-                                <div className="font-semibold text-white">{fabric.name}</div>
-                                <div className="text-sm text-muted-foreground">{fabric.desc}</div>
+                                <div className="font-bold text-white">{opt.label}</div>
+                                <div className="text-xs text-slate-400">{opt.desc}</div>
                             </div>
-                            <input
-                                type="radio"
-                                value={fabric.id}
-                                className="hidden"
-                                {...register("fabric")}
-                            />
-                            {selectedFabric === fabric.id && (
-                                <div className="w-4 h-4 rounded-full bg-accent mt-1" />
-                            )}
-                        </div>
+                        </button>
                     ))}
                 </div>
+                <input type="hidden" {...register("urgency", { required: "Please select a timeline" })} />
+                {errors.urgency && <p className="text-red-400 text-sm">Required</p>}
             </div>
 
-            {/* Color Selection */}
+            {/* Fabric Source */}
             <div className="space-y-4">
-                <label className="text-sm font-medium text-white/70 uppercase tracking-wider">Color Palette</label>
-                <div className="flex flex-wrap gap-3">
-                    {COLORS.map((color) => (
-                        <div
-                            key={color.id}
-                            onClick={() => setValue("color", color.id)}
-                            className="group cursor-pointer relative"
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                    Fabric Preference
+                </label>
+                <div className="flex flex-wrap gap-2">
+                    {[
+                        { id: 'platform', label: 'Use MyGarms Fabric' },
+                        { id: 'own', label: 'I Have My Own Fabric' },
+                        { id: 'unsure', label: 'Not Sure Yet' }
+                    ].map(opt => (
+                        <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => setValue("fabricSource", opt.id)}
+                            className={cn(
+                                "px-4 py-2 rounded-lg border text-sm font-medium transition-all",
+                                fabricSource === opt.id
+                                    ? "bg-white text-black border-white"
+                                    : "bg-transparent text-slate-400 border-white/20 hover:border-white/50"
+                            )}
                         >
-                            <input
-                                type="radio"
-                                value={color.id}
-                                className="hidden"
-                                {...register("color")}
-                            />
-                            <div
-                                className={cn(
-                                    "w-12 h-12 rounded-full border-2 transition-all duration-200",
-                                    selectedColor === color.id
-                                        ? "border-white scale-110 shadow-lg"
-                                        : "border-transparent group-hover:scale-105"
-                                )}
-                                style={{ backgroundColor: color.hex }}
-                            />
-                            <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-white/50 opacity-0 group-hover:opacity-100 whitespace-nowrap transition-opacity">
-                                {color.name}
-                            </span>
-                        </div>
+                            {opt.label}
+                        </button>
                     ))}
                 </div>
+                <input type="hidden" {...register("fabricSource")} />
             </div>
+
+            {/* Budget Range (Optional) */}
+            <div className="space-y-4">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                    Budget Range (Optional)
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                    {[
+                        { id: 'budget', label: 'Economy', desc: '₦' },
+                        { id: 'standard', label: 'Standard', desc: '₦₦' },
+                        { id: 'premium', label: 'Premium', desc: '₦₦₦' },
+                    ].map(opt => (
+                        <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => setValue("budgetRange", opt.id)}
+                            className={cn(
+                                "p-3 rounded-lg border text-center transition-all",
+                                budgetRange === opt.id
+                                    ? "bg-emerald-500/20 border-emerald-500 text-emerald-300"
+                                    : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
+                            )}
+                        >
+                            <div className="text-lg font-bold mb-1">{opt.desc}</div>
+                            <div className="text-xs">{opt.label}</div>
+                        </button>
+                    ))}
+                </div>
+                <input type="hidden" {...register("budgetRange")} />
+            </div>
+
         </div>
     );
 }

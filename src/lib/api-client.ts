@@ -138,6 +138,22 @@ export const designerApi = {
         return fetchApi<{ orders: Order[] }>('/designer/orders');
     },
 
+    getRequests: async () => {
+        return fetchApi<{ requests: Order[] }>('/designer/requests');
+    },
+
+    acceptRequest: async (id: string) => {
+        return fetchApi<{ success: boolean; message: string }>(`/designer/requests/${id}/accept`, {
+            method: 'POST'
+        });
+    },
+
+    declineRequest: async (id: string) => {
+        return fetchApi<{ success: boolean; message: string }>(`/designer/requests/${id}/decline`, {
+            method: 'POST'
+        });
+    },
+
     submitFeedback: async (orderId: string, data: {
         action: 'approve' | 'suggest_edit' | 'request_change' | 'set_price';
         comment: string;
@@ -169,6 +185,21 @@ export const designerApi = {
     }) => {
         return fetchApi<{ order: Order; message: string }>(`/designer/orders/${orderId}/production`, {
             method: 'POST',
+            body: JSON.stringify(data),
+        });
+    },
+
+    getSettings: async () => {
+        return fetchApi<{ profile: any }>('/designer/profile');
+    },
+
+    updateSettings: async (data: {
+        specialties?: string[];
+        maxCapacity?: number;
+        status?: 'available' | 'busy' | 'offline';
+    }) => {
+        return fetchApi<{ success: true; profile: any }>('/designer/profile', {
+            method: 'PUT',
             body: JSON.stringify(data),
         });
     },

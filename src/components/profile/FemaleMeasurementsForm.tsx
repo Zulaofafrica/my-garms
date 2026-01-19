@@ -135,9 +135,9 @@ export function FemaleMeasurementsForm({ measurements, onChange }: FemaleMeasure
                     <label>Bra Size</label>
                     <div className="bra-size-selects">
                         <select
-                            value={measurements.braSize.match(/^\d+/)?.[0] || ''}
+                            value={(measurements.braSize || '').match(/^\d+/)?.[0] || ''}
                             onChange={(e) => {
-                                const cup = measurements.braSize.match(/[A-Z]+$/)?.[0] || '';
+                                const cup = (measurements.braSize || '').match(/[A-Z]+$/)?.[0] || '';
                                 handleChange('braSize', `${e.target.value}${cup}`);
                             }}
                         >
@@ -147,9 +147,9 @@ export function FemaleMeasurementsForm({ measurements, onChange }: FemaleMeasure
                             ))}
                         </select>
                         <select
-                            value={measurements.braSize.match(/[A-Z]+$/)?.[0] || ''}
+                            value={(measurements.braSize || '').match(/[A-Z]+$/)?.[0] || ''}
                             onChange={(e) => {
-                                const band = measurements.braSize.match(/^\d+/)?.[0] || '';
+                                const band = (measurements.braSize || '').match(/^\d+/)?.[0] || '';
                                 handleChange('braSize', `${band}${e.target.value}`);
                             }}
                         >

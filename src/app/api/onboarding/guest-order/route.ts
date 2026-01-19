@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { findByField, insertOne, DbUser, DbProfile, DbOrder, generateId } from "@/lib/db";
 import { setSession } from "@/lib/session";
-import path from "path";
-import crypto from "crypto";
-
-// Helper to hash password (basic for demo)
-function hashPassword(password: string): string {
-    return crypto.createHash('sha256').update(password).digest('hex');
-}
+import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
     try {
@@ -25,7 +19,7 @@ export async function POST(request: NextRequest) {
         const user: DbUser = {
             id: userId,
             email: userData.email,
-            passwordHash: hashPassword(userData.password),
+            passwordHash: await bcrypt.hash(userData.password, 10),
             firstName: userData.firstName,
             lastName: userData.lastName,
             role: 'customer',
@@ -71,6 +65,16 @@ export async function POST(request: NextRequest) {
 
         // 5. Set Session (Auto-login)
         await setSession(userId);
+
+        // 6. Trigger Matching Service (Async - don't await blocking response?)
+        // Better to await to ensure it runs, but errors shouldn't fail the request ideally.
+        try {
+            const { MatchingService } = await import('@/lib/matching-service');
+            await MatchingService.shortlistDesigners(orderId);
+        } catch (matchError) {
+            console.error("Auto-matching failed:", matchError);
+            // Don't fail the order creation
+        }
 
         return NextResponse.json({
             success: true,

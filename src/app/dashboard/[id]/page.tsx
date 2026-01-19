@@ -265,6 +265,14 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
                                     <span className="text-muted-foreground">Fabric</span>
                                     <span className="text-white">Included</span>
                                 </div>
+                                {order.estimatedCompletionDate && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground">Est. Delivery</span>
+                                        <span className="text-accent font-medium">
+                                            {new Date(order.estimatedCompletionDate).toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                )}
                                 <div className="border-t border-white/10 pt-3 flex justify-between font-bold">
                                     <span className="text-white">Total</span>
                                     <span className="text-white">

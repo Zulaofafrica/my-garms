@@ -71,6 +71,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             assignedDesignerId: user.id, // Assign to this designer if not already
             feedbackLog: [...(order.feedbackLog || []), feedbackEntry],
             updatedAt: new Date().toISOString(),
+            ...(body.estimatedCompletionDate ? { estimatedCompletionDate: body.estimatedCompletionDate } : {})
         };
 
         const updatedOrder = await updateOne<DbOrder>('orders', id, updates);

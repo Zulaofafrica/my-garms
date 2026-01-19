@@ -9,7 +9,8 @@ import {
     AlertCircle,
     Clock,
     ChevronRight,
-    Search
+    Search,
+    Briefcase
 } from "lucide-react";
 import { designerApi, authApi, Order, User } from "@/lib/api-client";
 import styles from "./designer.module.css";
@@ -75,11 +76,30 @@ export default function DesignerDashboard() {
                     <h1 className={styles.title}>Designer Portal</h1>
                     <p className={styles.subtitle}>Manage and review custom design requests.</p>
                 </div>
-                <div className={styles.userBadge}>
-                    <span className={styles.userName}>{user?.firstName} {user?.lastName}</span>
-                    <span className={styles.userRole}>Master Designer</span>
+                <div className="flex items-center gap-4">
+                    <Link href="/designer/settings" className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-slate-300 hover:text-white transition-colors" title="Settings">
+                        <Briefcase size={20} />
+                    </Link>
+                    <div className={styles.userBadge}>
+                        <span className={styles.userName}>{user?.firstName} {user?.lastName}</span>
+                        <span className={styles.userRole}>Master Designer</span>
+                    </div>
                 </div>
             </header>
+
+            <div className="mb-8 p-6 rounded-xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 flex items-center justify-between">
+                <div>
+                    <h3 className="text-xl font-bold text-white mb-2">New Design Matches Available!</h3>
+                    <p className="text-indigo-200">There are new customer requests waiting for your review.</p>
+                </div>
+                <Link
+                    href="/designer/requests"
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 transition-all shadow-lg shadow-indigo-500/20"
+                >
+                    <ClipboardList size={20} />
+                    View New Requests
+                </Link>
+            </div>
 
             <div className={styles.statsGrid}>
                 <div className={styles.statCard}>
@@ -96,7 +116,7 @@ export default function DesignerDashboard() {
                 </div>
                 <div className={styles.statCard}>
                     <span className={styles.statValue}>{stats.total}</span>
-                    <span className={styles.statLabel}>Total Requests</span>
+                    <span className={styles.statLabel}>My Active Orders</span>
                 </div>
             </div>
 

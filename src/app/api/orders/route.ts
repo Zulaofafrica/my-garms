@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const newOrder: DbOrder = {
+        const order: DbOrder = {
             id: generateId(),
             userId: session.userId,
             profileId,
@@ -65,15 +65,22 @@ export async function POST(request: NextRequest) {
             style,
             color,
             notes,
+            paymentStatus: 'pending',
             createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
         };
 
-        await insertOne('orders', newOrder);
+        await insertOne('orders', order);
+
+        // Trigger Matching
+        try {
+            const { MatchingService } = await import('@/lib/matching-service');
+            await MatchingService.shortlistDesigners(order.id);
+        } catch (e) { console.error("Matching error:", e); }
 
         return NextResponse.json({
-            order: newOrder,
-            message: 'Order created successfully',
+            order,
+            message: 'Order created successfully. Matching with designers...'
         });
     } catch (error) {
         console.error('Create order error:', error);

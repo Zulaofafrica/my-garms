@@ -129,6 +129,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
 
             if (action === 'set_price') {
                 payload.price = Number(priceInput);
+                if (endDate) payload.estimatedCompletionDate = endDate;
             }
 
             if (attachmentUrl) {
@@ -368,13 +369,22 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                                     onChange={(e) => setPriceInput(e.target.value)}
                                 />
                             </div>
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Estimated Completion</label>
+                                <input
+                                    type="date"
+                                    className={styles.input}
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                />
+                            </div>
                             <button
                                 className={`${styles.button} ${styles.approveBtn}`}
                                 onClick={() => handleAction('set_price')}
-                                disabled={isSubmitting || !priceInput}
+                                disabled={isSubmitting || !priceInput || !endDate}
                                 style={{ width: '100%', justifyContent: 'center' }}
                             >
-                                Update Price
+                                Update Price & Schedule
                             </button>
                             {order.price && (
                                 <p className={styles.muted} style={{ textAlign: 'center', marginTop: '0.5rem' }}>

@@ -1,14 +1,33 @@
 
-import { sql } from '@vercel/postgres';
+import { Pool, QueryResultRow } from 'pg';
 
-// Database model types (exported for use in app)
+let pool: Pool | null = null;
+
+function getPool() {
+    if (!pool) {
+        pool = new Pool({
+            connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
+            ssl: {
+                rejectUnauthorized: false // Needed for some Vercel/Neon connections
+            }
+        });
+    }
+    return pool;
+}
+
+export async function query(text: string, params?: any[]) {
+    const p = getPool();
+    return p.query(text, params);
+}
+
+// Database model types
 export interface DbUser {
     id: string;
     email: string;
     passwordHash: string;
     firstName: string;
     lastName: string;
-    role: 'customer' | 'designer';
+    role: 'customer' | 'designer' | 'admin';
     createdAt: string;
 }
 
@@ -24,12 +43,25 @@ export interface DbProfile {
 
 export interface FeedbackEntry {
     id: string;
-    userId: string; // The designer who gave feedback
+    userId: string;
     userName: string;
     action: 'approve' | 'suggest_edit' | 'request_change' | 'set_price';
     comment: string;
-    attachmentUrl?: string; // Optional image attachment
+    attachmentUrl?: string;
     timestamp: string;
+}
+
+export interface DbDesignerProfile {
+    id: string;
+    userId: string;
+    specialties: string[];
+    skillLevel: 'basic' | 'advanced' | 'premium';
+    maxCapacity: number;
+    currentLoad: number;
+    rating: number; // 0-5
+    status: 'available' | 'busy' | 'offline';
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface DbOrder {
@@ -42,14 +74,26 @@ export interface DbOrder {
     fabricName: string;
     status: 'pending' | 'reviewing' | 'changes_requested' | 'confirmed' | 'sewing' | 'shipping' | 'delivered';
     assignedDesignerId?: string;
+
+    // Assignment fields
+    assignmentStatus?: 'open' | 'shortlisted' | 'assigned' | 'completed';
+    shortlistedDesignerIds?: string[];
+    assignmentExpiresAt?: string;
+
     feedbackLog: FeedbackEntry[];
     total: number;
-    price: number | null; // Null means "Calculating..."
+    price: number | null;
     images: string[];
     style?: string;
+    // New Matching Fields
+    category?: 'dress' | 'suit' | 'shirt' | 'native' | 'jacket' | 'two-piece' | 'other';
+    complexity?: 'simple' | 'moderate' | 'detailed';
+    urgency?: 'flexible' | 'standard' | 'urgent';
+    budgetRange?: 'budget' | 'standard' | 'premium';
+    fabricSource?: 'platform' | 'own' | 'unsure';
+
     color?: string;
     notes?: string;
-    // Payment & Production
     paymentStatus?: 'pending' | 'verify_70' | 'paid_70' | 'verify_100' | 'paid_100';
     paymentType?: 'full' | 'partial';
     proofUrl?: string;
@@ -61,7 +105,15 @@ export interface DbOrder {
     updatedAt: string;
 }
 
-// Helper to convert DB rows to application objects
+export interface DbNotification {
+    id: string;
+    userId: string;
+    type: 'system' | 'order_update' | 'request_received';
+    message: string;
+    read: boolean;
+    createdAt: string;
+}
+
 function mapUser(row: any): DbUser {
     return {
         id: row.id,
@@ -86,6 +138,21 @@ function mapProfile(row: any): DbProfile {
     };
 }
 
+function mapDesignerProfile(row: any): DbDesignerProfile {
+    return {
+        id: row.id,
+        userId: row.user_id,
+        specialties: row.specialties || [],
+        skillLevel: row.skill_level,
+        maxCapacity: row.max_capacity,
+        currentLoad: row.current_load,
+        rating: Number(row.rating),
+        status: row.status,
+        createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+        updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
+    };
+}
+
 function mapOrder(row: any): DbOrder {
     const { id, user_id, status, total, created_at, updated_at, data } = row;
     return {
@@ -95,35 +162,30 @@ function mapOrder(row: any): DbOrder {
         total: Number(total),
         createdAt: created_at?.toISOString() || new Date().toISOString(),
         updatedAt: updated_at?.toISOString() || new Date().toISOString(),
-        ...data, // Spread the JSONB data
+        ...data,
     };
 }
 
-// Generic read (List all)
-// Note: This scans the whole table. Okay for MVP/small scale.
 export async function readCollection<T>(collection: string): Promise<T[]> {
     try {
         if (collection === 'users') {
-            const { rows } = await sql`SELECT * FROM users`;
+            const { rows } = await query('SELECT * FROM users');
             return rows.map(mapUser) as unknown as T[];
         } else if (collection === 'profiles') {
-            const { rows } = await sql`SELECT * FROM profiles`;
+            const { rows } = await query('SELECT * FROM profiles');
             return rows.map(mapProfile) as unknown as T[];
+        } else if (collection === 'designer_profiles') {
+            const { rows } = await query('SELECT * FROM designer_profiles');
+            return rows.map(mapDesignerProfile) as unknown as T[];
         } else if (collection === 'orders') {
-            const { rows } = await sql`SELECT * FROM orders`;
+            const { rows } = await query('SELECT * FROM orders');
             return rows.map(mapOrder) as unknown as T[];
         }
         return [];
     } catch (error) {
-        console.error(`Error reading existing collection ${collection}:`, error);
+        console.error(`Error reading ${collection}:`, error);
         return [];
     }
-}
-
-// Deprecated in favor of direct DB manipulation, but kept for compatibility potential
-// We do NOT implement writeCollection as "overwrite everything" anymore.
-export async function writeCollection<T>(collection: string, data: T[]): Promise<void> {
-    throw new Error('writeCollection is deprecated. Use insertOne, updateOne, or deleteOne.');
 }
 
 export async function findById<T extends { id: string }>(
@@ -132,13 +194,16 @@ export async function findById<T extends { id: string }>(
 ): Promise<T | null> {
     try {
         if (collection === 'users') {
-            const { rows } = await sql`SELECT * FROM users WHERE id = ${id} LIMIT 1`;
+            const { rows } = await query('SELECT * FROM users WHERE id = $1 LIMIT 1', [id]);
             return rows.length ? (mapUser(rows[0]) as unknown as T) : null;
         } else if (collection === 'profiles') {
-            const { rows } = await sql`SELECT * FROM profiles WHERE id = ${id} LIMIT 1`;
+            const { rows } = await query('SELECT * FROM profiles WHERE id = $1 LIMIT 1', [id]);
             return rows.length ? (mapProfile(rows[0]) as unknown as T) : null;
+        } else if (collection === 'designer_profiles') {
+            const { rows } = await query('SELECT * FROM designer_profiles WHERE id = $1 LIMIT 1', [id]);
+            return rows.length ? (mapDesignerProfile(rows[0]) as unknown as T) : null;
         } else if (collection === 'orders') {
-            const { rows } = await sql`SELECT * FROM orders WHERE id = ${id} LIMIT 1`;
+            const { rows } = await query('SELECT * FROM orders WHERE id = $1 LIMIT 1', [id]);
             return rows.length ? (mapOrder(rows[0]) as unknown as T) : null;
         }
         return null;
@@ -154,22 +219,17 @@ export async function findByField<T>(
     value: unknown
 ): Promise<T | null> {
     try {
-        // Warning: This builds raw SQL queries for field names. 
-        // Ensure 'field' is strictly controlled by strict typing in app code.
-        // For MVP we map common fields manually to be safe.
-
-        if (collection === 'users') {
-            // Safe mappings for user search fields
-            if (field === 'email') {
-                const { rows } = await sql`SELECT * FROM users WHERE email = ${value as string} LIMIT 1`;
-                return rows.length ? (mapUser(rows[0]) as unknown as T) : null;
-            }
+        if (collection === 'users' && field === 'email') {
+            const { rows } = await query('SELECT * FROM users WHERE email = $1 LIMIT 1', [value]);
+            return rows.length ? (mapUser(rows[0]) as unknown as T) : null;
+        }
+        if (collection === 'designer_profiles' && field === 'userId') {
+            const { rows } = await query('SELECT * FROM designer_profiles WHERE user_id = $1 LIMIT 1', [value]);
+            return rows.length ? (mapDesignerProfile(rows[0]) as unknown as T) : null;
         }
 
-        // Fallback to in-memory filter if field not indexed/mapped (Inefficient but safe for MVP transition)
         const all = await readCollection<T>(collection);
         return all.find((item) => item[field] === value) || null;
-
     } catch (error) {
         console.error(`Error finding by field ${String(field)} in ${collection}:`, error);
         return null;
@@ -182,17 +242,19 @@ export async function findAllByField<T>(
     value: unknown
 ): Promise<T[]> {
     try {
-        // Optimized paths
         if (collection === 'orders' && field === 'userId') {
-            const { rows } = await sql`SELECT * FROM orders WHERE user_id = ${value as string}`;
+            const { rows } = await query('SELECT * FROM orders WHERE user_id = $1', [value]);
             return rows.map(mapOrder) as unknown as T[];
         }
         if (collection === 'profiles' && field === 'userId') {
-            const { rows } = await sql`SELECT * FROM profiles WHERE user_id = ${value as string}`;
+            const { rows } = await query('SELECT * FROM profiles WHERE user_id = $1', [value]);
             return rows.map(mapProfile) as unknown as T[];
         }
+        if (collection === 'designer_profiles' && field === 'status') {
+            const { rows } = await query('SELECT * FROM designer_profiles WHERE status = $1', [value]);
+            return rows.map(mapDesignerProfile) as unknown as T[];
+        }
 
-        // Fallback
         const all = await readCollection<T>(collection);
         return all.filter((item) => item[field] === value);
     } catch (error) {
@@ -208,23 +270,35 @@ export async function insertOne<T extends { id: string }>(
     try {
         if (collection === 'users') {
             const u = item as unknown as DbUser;
-            await sql`
-                INSERT INTO users (id, email, password_hash, first_name, last_name, role, created_at)
-                VALUES (${u.id}, ${u.email}, ${u.passwordHash}, ${u.firstName}, ${u.lastName}, ${u.role}, ${u.createdAt})
-            `;
+            await query(
+                'INSERT INTO users (id, email, password_hash, first_name, last_name, role, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+                [u.id, u.email, u.passwordHash, u.firstName, u.lastName, u.role, u.createdAt]
+            );
         } else if (collection === 'profiles') {
             const p = item as unknown as DbProfile;
-            await sql`
-                INSERT INTO profiles (id, user_id, name, gender, measurements, created_at, updated_at)
-                VALUES (${p.id}, ${p.userId}, ${p.name}, ${p.gender}, ${JSON.stringify(p.measurements)}, ${p.createdAt}, ${p.updatedAt})
-            `;
+            await query(
+                'INSERT INTO profiles (id, user_id, name, gender, measurements, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+                [p.id, p.userId, p.name, p.gender, JSON.stringify(p.measurements), p.createdAt, p.updatedAt]
+            );
+        } else if (collection === 'designer_profiles') {
+            const d = item as unknown as DbDesignerProfile;
+            await query(
+                'INSERT INTO designer_profiles (id, user_id, specialties, skill_level, max_capacity, current_load, rating, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+                [d.id, d.userId, JSON.stringify(d.specialties), d.skillLevel, d.maxCapacity, d.currentLoad, d.rating, d.status, d.createdAt, d.updatedAt]
+            );
         } else if (collection === 'orders') {
             const o = item as unknown as DbOrder;
             const { id, userId, status, total, createdAt, updatedAt, ...rest } = o;
-            await sql`
-                INSERT INTO orders (id, user_id, status, total, created_at, updated_at, data)
-                VALUES (${id}, ${userId}, ${status}, ${total}, ${createdAt}, ${updatedAt}, ${JSON.stringify(rest)})
-            `;
+            await query(
+                'INSERT INTO orders (id, user_id, status, total, created_at, updated_at, data) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+                [id, userId, status, total, createdAt, updatedAt, JSON.stringify(rest)]
+            );
+        } else if (collection === 'notifications') {
+            const n = item as unknown as DbNotification;
+            await query(
+                'INSERT INTO notifications (id, user_id, type, message, read, created_at) VALUES ($1, $2, $3, $4, $5, $6)',
+                [n.id, n.userId, n.type, n.message, n.read, n.createdAt]
+            );
         }
         return item;
     } catch (error) {
@@ -239,11 +313,6 @@ export async function updateOne<T extends { id: string }>(
     updates: Partial<T>
 ): Promise<T | null> {
     try {
-        // We first fetch the existing item to merge locally, 
-        // because our JSONB 'data' method requires rewriting the whole JSON object for simple JSON fields in SQL (usually)
-        // or we can use specific JSONB set operations, but deep merge is complex in pure SQL.
-        // For 'users' and 'profiles' (relational fields), we could issue UPDATE.
-
         const existing = await findById<T>(collection, id);
         if (!existing) return null;
 
@@ -251,40 +320,31 @@ export async function updateOne<T extends { id: string }>(
 
         if (collection === 'users') {
             const u = merged as unknown as DbUser;
-            await sql`
-                UPDATE users SET 
-                    email = ${u.email}, 
-                    password_hash = ${u.passwordHash}, 
-                    first_name = ${u.firstName}, 
-                    last_name = ${u.lastName}, 
-                    role = ${u.role}
-                WHERE id = ${id}
-            `;
+            await query(
+                'UPDATE users SET email = $1, password_hash = $2, first_name = $3, last_name = $4, role = $5 WHERE id = $6',
+                [u.email, u.passwordHash, u.firstName, u.lastName, u.role, id]
+            );
         } else if (collection === 'profiles') {
             const p = merged as unknown as DbProfile;
-            await sql`
-                UPDATE profiles SET 
-                    name = ${p.name}, 
-                    gender = ${p.gender}, 
-                    measurements = ${JSON.stringify(p.measurements)}, 
-                    updated_at = ${new Date().toISOString()}
-                WHERE id = ${id}
-            `;
+            await query(
+                'UPDATE profiles SET name = $1, gender = $2, measurements = $3, updated_at = $4 WHERE id = $5',
+                [p.name, p.gender, JSON.stringify(p.measurements), new Date().toISOString(), id]
+            );
+        } else if (collection === 'designer_profiles') {
+            const d = merged as unknown as DbDesignerProfile;
+            await query(
+                'UPDATE designer_profiles SET specialties = $1, skill_level = $2, max_capacity = $3, current_load = $4, rating = $5, status = $6, updated_at = $7 WHERE id = $8',
+                [JSON.stringify(d.specialties), d.skillLevel, d.maxCapacity, d.currentLoad, d.rating, d.status, new Date().toISOString(), id]
+            );
         } else if (collection === 'orders') {
             const o = merged as unknown as DbOrder;
             const { id: _id, userId, status, total, createdAt, updatedAt, ...rest } = o;
-            // Update relations and the data blob
-            await sql`
-                UPDATE orders SET 
-                    status = ${status}, 
-                    total = ${total}, 
-                    updated_at = ${new Date().toISOString()}, 
-                    data = ${JSON.stringify(rest)}
-                WHERE id = ${id}
-            `;
+            await query(
+                'UPDATE orders SET status = $1, total = $2, updated_at = $3, data = $4 WHERE id = $5',
+                [status, total, new Date().toISOString(), JSON.stringify(rest), id]
+            );
         }
 
-        // Return the fresh merged object with updated timestamp
         if ((merged as any).updatedAt) {
             (merged as any).updatedAt = new Date().toISOString();
         }
@@ -302,11 +362,13 @@ export async function deleteOne<T extends { id: string }>(
 ): Promise<boolean> {
     try {
         if (collection === 'users') {
-            await sql`DELETE FROM users WHERE id = ${id}`;
+            await query('DELETE FROM users WHERE id = $1', [id]);
         } else if (collection === 'profiles') {
-            await sql`DELETE FROM profiles WHERE id = ${id}`;
+            await query('DELETE FROM profiles WHERE id = $1', [id]);
+        } else if (collection === 'designer_profiles') {
+            await query('DELETE FROM designer_profiles WHERE id = $1', [id]);
         } else if (collection === 'orders') {
-            await sql`DELETE FROM orders WHERE id = ${id}`;
+            await query('DELETE FROM orders WHERE id = $1', [id]);
         } else {
             return false;
         }
@@ -317,7 +379,6 @@ export async function deleteOne<T extends { id: string }>(
     }
 }
 
-// Generate unique ID
 export function generateId(): string {
     return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
