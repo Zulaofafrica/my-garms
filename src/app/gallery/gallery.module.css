@@ -1,0 +1,71 @@
+.header {
+    padding: 4rem 0 2rem;
+    text-align: center;
+}
+
+.title {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    color: var(--muted-foreground);
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 3rem;
+    padding-bottom: 4rem;
+}
+
+.sidebar {
+    padding-top: 1rem;
+}
+
+.filterSection {
+    margin-bottom: 2rem;
+}
+
+.filterSection h3 {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+}
+
+.filterSection ul {
+    list-style: none;
+}
+
+.filterSection li {
+    margin-bottom: 0.5rem;
+}
+
+.filterSection label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--muted-foreground);
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.range {
+    width: 100%;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+}
+
+@media (max-width: 768px) {
+    .layout {
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        display: none;
+        /* Hide filters on mobile for MVP */
+    }
+}

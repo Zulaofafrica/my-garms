@@ -1,0 +1,63 @@
+export const FABRICS = [
+    {
+        id: "f1",
+        name: "Royal Ankara Print",
+        type: "Cotton",
+        price: 68000,
+        image: "/images/fabric-1.jpg",
+        color: "Multi",
+        description: "Vibrant wax print cotton, perfect for shirts and dresses.",
+    },
+    {
+        id: "f2",
+        name: "Midnight Wool Blend",
+        type: "Wool",
+        price: 180000,
+        image: "/images/fabric-2.jpg",
+        color: "Black",
+        description: "Premium wool blend for suits and formal wear.",
+    },
+    {
+        id: "f3",
+        name: "Golden Silk Voile",
+        type: "Silk",
+        price: 128000,
+        image: "/images/fabric-3.jpg",
+        color: "Gold",
+        description: "Lightweight and luxurious, ideal for flowing gowns.",
+    },
+    {
+        id: "f4",
+        name: "Crisp White Linen",
+        type: "Linen",
+        price: 83000,
+        image: "/images/fabric-4.jpg",
+        color: "White",
+        description: "Breathable and classic, great for summer native wear.",
+    },
+    {
+        id: "f5",
+        name: "Emerald Velvet",
+        type: "Velvet",
+        price: 135000,
+        image: "/images/fabric-5.jpg",
+        color: "Green",
+        description: "Rich texture for statement pieces.",
+    },
+    {
+        id: "f6",
+        name: "Navy Blue Cashmere",
+        type: "Cashmere",
+        price: 300000,
+        image: "/images/fabric-6.jpg",
+        color: "Blue",
+        description: "The ultimate luxury for bespoke suits.",
+    },
+];
+
+export const TEMPLATES = [
+    { id: "t1", name: "Classic Suit", category: "Suit" },
+    { id: "t2", name: "Agbada", category: "Native" },
+    { id: "t3", name: "Summer Dress", category: "Dress" },
+    { id: "t4", name: "Oxford Shirt", category: "Shirt" },
+];

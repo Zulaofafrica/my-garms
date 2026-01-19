@@ -1,0 +1,210 @@
+.wizard {
+    padding: 4rem 0;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.progress {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4rem;
+}
+
+.step {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    position: relative;
+    flex: 1;
+}
+
+.step:last-child {
+    flex: 0;
+}
+
+.stepNumber {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--muted);
+    color: var(--muted-foreground);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    z-index: 1;
+}
+
+.activeStep .stepNumber {
+    background: var(--primary);
+    color: var(--primary-foreground);
+}
+
+.stepLabel {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
+}
+
+.activeStep .stepLabel {
+    color: var(--foreground);
+}
+
+.stepLine {
+    flex: 1;
+    height: 2px;
+    background: var(--muted);
+    margin: 0 1rem;
+}
+
+.activeStep .stepLine {
+    background: var(--primary);
+    /* Optional: color line if step is done */
+}
+
+.stepContent {
+    min-height: 400px;
+    margin-bottom: 2rem;
+}
+
+.stepTitle {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.optionCard {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.optionCard:hover {
+    border-color: var(--primary);
+    background: var(--secondary);
+}
+
+.selected {
+    border-color: var(--primary);
+    background: var(--secondary);
+    box-shadow: 0 0 0 1px var(--primary);
+}
+
+.optionIcon {
+    width: 64px;
+    height: 64px;
+    background: var(--muted);
+    border-radius: 50%;
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-family: var(--font-playfair);
+}
+
+.check {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    color: var(--primary);
+}
+
+.actions {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid var(--border);
+    padding-top: 2rem;
+}
+
+/* Step 1: Measurements */
+.measurementsReview {
+    background: var(--secondary);
+    padding: 2rem;
+    border-radius: var(--radius);
+}
+
+.measurementGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.mItem {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background: var(--background);
+    border-radius: var(--radius);
+}
+
+/* Step 2: Fabric */
+.fabricGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.5rem;
+}
+
+.selectedFabric>div {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary);
+}
+
+/* Step 3: Review */
+.reviewLayout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+}
+
+.previewContainer {
+    height: 500px;
+}
+
+.summary {
+    background: var(--secondary);
+    padding: 2rem;
+    border-radius: var(--radius);
+    height: fit-content;
+}
+
+.summary h3 {
+    margin-bottom: 1.5rem;
+}
+
+.summaryRow {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+}
+
+.divider {
+    height: 1px;
+    background: var(--border);
+    margin: 1rem 0;
+}
+
+.total {
+    font-weight: 700;
+    font-size: 1.2rem;
+    margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+    .reviewLayout {
+        grid-template-columns: 1fr;
+    }
+}
