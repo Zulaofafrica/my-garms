@@ -17,6 +17,7 @@ import {
 import { ordersApi, Order } from "@/lib/api-client";
 import { GlowButton } from "@/components/ui/glow-button";
 import { SimpleImageUpload } from "@/components/ui/simple-image-upload";
+import { DeliveryDetailsForm } from "@/components/delivery-details-form";
 
 interface CustomerOrderDetailPageProps {
     params: Promise<{ id: string }>;
@@ -33,6 +34,27 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
     const [paymentType, setPaymentType] = useState<'full' | 'partial'>('full');
     const [proofUrl, setProofUrl] = useState("");
     const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+    const [isEditingDelivery, setIsEditingDelivery] = useState(false);
+
+    // Reply State
+    const [replyComment, setReplyComment] = useState("");
+    const [isSendingReply, setIsSendingReply] = useState(false);
+
+    const handleSendReply = async () => {
+        if (!order || !replyComment.trim()) return;
+
+        setIsSendingReply(true);
+        try {
+            const data = await ordersApi.submitReply(order.id, { comment: replyComment });
+            setOrder(data.order);
+            setReplyComment("");
+        } catch (err) {
+            console.error("Reply error:", err);
+            alert("Failed to send reply");
+        } finally {
+            setIsSendingReply(false);
+        }
+    };
 
     useEffect(() => {
         const loadOrder = async () => {
@@ -214,7 +236,8 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
                                                     ${log.action === 'approve' ? 'bg-green-500/20 text-green-400' :
                                                         log.action === 'set_price' ? 'bg-blue-500/20 text-blue-400' :
                                                             log.action === 'request_change' ? 'bg-red-500/20 text-red-400' :
-                                                                'bg-indigo-500/20 text-indigo-400'}`}>
+                                                                log.action === 'reply' ? 'bg-purple-500/20 text-purple-400' :
+                                                                    'bg-indigo-500/20 text-indigo-400'}`}>
                                                     {log.action.replace('_', ' ')}
                                                 </span>
                                             </div>
@@ -231,6 +254,28 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
                                         No feedback from the designer yet.
                                     </p>
                                 )}
+
+                                {/* Reply Section */}
+                                <div className="pt-4 border-t border-white/10">
+                                    <h3 className="text-sm font-semibold text-white mb-2">Send a Reply</h3>
+                                    <textarea
+                                        className="w-full bg-slate-900 border border-white/10 rounded-lg p-3 text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 transition-colors text-sm min-h-[100px]"
+                                        placeholder="Type your reply here..."
+                                        value={replyComment}
+                                        onChange={(e) => setReplyComment(e.target.value)}
+                                        disabled={isSendingReply}
+                                    />
+                                    <div className="mt-2 flex justify-end">
+                                        <GlowButton
+                                            variant="primary"
+                                            size="sm"
+                                            disabled={!replyComment.trim() || isSendingReply}
+                                            onClick={handleSendReply}
+                                        >
+                                            {isSendingReply ? "Sending..." : "Send Reply"}
+                                        </GlowButton>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -245,10 +290,34 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
 
                             <div className="mb-6">
                                 {order.price ? (
-                                    <div className="flex items-baseline gap-1">
-                                        <span className="text-lg text-indigo-300">₦</span>
-                                        <span className="text-4xl font-bold text-white">{order.price.toLocaleString()}</span>
-                                    </div>
+                                    <>
+                                        <div className="flex items-baseline gap-1 mb-4">
+                                            <span className="text-lg text-indigo-300">₦</span>
+                                            <span className="text-4xl font-bold text-white">{order.price.toLocaleString()}</span>
+                                        </div>
+
+                                        {/* Breakdown Display */}
+                                        {order.priceBreakdown && (
+                                            <div className="bg-white/5 rounded-lg p-3 space-y-2 mb-4 text-sm">
+                                                <div className="flex justify-between">
+                                                    <span className="text-muted-foreground">Fabric</span>
+                                                    <span className="text-white">₦{order.priceBreakdown.fabric.toLocaleString()}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-muted-foreground">Labor</span>
+                                                    <span className="text-white">₦{order.priceBreakdown.labor.toLocaleString()}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-muted-foreground">Customization</span>
+                                                    <span className="text-white">₦{order.priceBreakdown.customization.toLocaleString()}</span>
+                                                </div>
+                                                <div className="flex justify-between border-t border-white/10 pt-2 mt-2">
+                                                    <span className="text-indigo-300">Delivery Fee</span>
+                                                    <span className="text-indigo-300">₦{order.priceBreakdown.delivery.toLocaleString()}</span>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
                                 ) : (
                                     <div className="bg-white/5 rounded-lg p-3 text-center animate-pulse">
                                         <span className="text-xl font-bold text-white/50">Calculating...</span>
@@ -261,10 +330,12 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
                                     <span className="text-muted-foreground">Base Design</span>
                                     <span className="text-white">Included</span>
                                 </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Fabric</span>
-                                    <span className="text-white">Included</span>
-                                </div>
+                                {!order.priceBreakdown && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground">Fabric</span>
+                                        <span className="text-white">Included</span>
+                                    </div>
+                                )}
                                 {order.estimatedCompletionDate && (
                                     <div className="flex justify-between text-sm">
                                         <span className="text-muted-foreground">Est. Delivery</span>
@@ -322,25 +393,67 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
                                                 </div>
 
                                                 <div className="mt-4">
-                                                    <SimpleImageUpload
-                                                        label="Upload Proof of Payment (Screenshot)"
-                                                        onUpload={(url) => setProofUrl(url)}
-                                                        value={proofUrl}
-                                                    />
-                                                    <div className="bg-slate-900 p-3 rounded text-xs text-muted-foreground my-3">
-                                                        <p className="font-bold text-white mb-1">Bank Details:</p>
-                                                        <p>Bank: GTBank</p>
-                                                        <p>Acct: 0123456789</p>
-                                                        <p>Name: MyGarms Ltd</p>
+                                                    <div className="mt-4">
+                                                        {(!order.deliveryDetails || isEditingDelivery) ? (
+                                                            <div className="relative">
+                                                                {isEditingDelivery && (
+                                                                    <button
+                                                                        onClick={() => setIsEditingDelivery(false)}
+                                                                        className="absolute right-0 top-0 text-xs text-muted-foreground hover:text-white"
+                                                                    >
+                                                                        Cancel
+                                                                    </button>
+                                                                )}
+                                                                <DeliveryDetailsForm
+                                                                    orderId={order.id}
+                                                                    onSuccess={(details: any) => {
+                                                                        setOrder((prev: any) => prev ? { ...prev, deliveryDetails: details } : null);
+                                                                        setIsEditingDelivery(false);
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                {/* Show Delivery Summary if saved */}
+                                                                <div className="bg-white/5 border border-white/10 rounded-lg p-3 mb-4 relative">
+                                                                    <div className="flex justify-between items-start">
+                                                                        <h4 className="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">Delivering To:</h4>
+                                                                        {!order.productionStage || order.productionStage === 'design_approved' ? (
+                                                                            <button
+                                                                                onClick={() => setIsEditingDelivery(true)}
+                                                                                className="text-xs text-indigo-400 hover:text-indigo-300"
+                                                                            >
+                                                                                Edit
+                                                                            </button>
+                                                                        ) : null}
+                                                                    </div>
+                                                                    <p className="text-sm text-white font-medium">{order.deliveryDetails.fullName}</p>
+                                                                    <p className="text-xs text-slate-300">{order.deliveryDetails.address}, {order.deliveryDetails.city}</p>
+                                                                    <p className="text-xs text-slate-400 mt-1">{order.deliveryDetails.phone}</p>
+                                                                </div>
+
+                                                                <SimpleImageUpload
+                                                                    label="Upload Proof of Payment (Screenshot)"
+                                                                    onUpload={(url) => setProofUrl(url)}
+                                                                    value={proofUrl}
+                                                                />
+                                                                <div className="bg-slate-900 p-3 rounded text-xs text-muted-foreground my-3">
+                                                                    <p className="font-bold text-white mb-1">Bank Details:</p>
+                                                                    <p>Bank: GTBank</p>
+                                                                    <p>Acct: 0123456789</p>
+                                                                    <p>Name: MyGarms Ltd</p>
+                                                                </div>
+                                                                <GlowButton
+                                                                    className="w-full"
+                                                                    variant="primary"
+                                                                    disabled={!proofUrl || !paymentType || isSubmittingPayment}
+                                                                    onClick={handlePaymentSubmit}
+                                                                >
+                                                                    {isSubmittingPayment ? "Submitting..." : "Submit Payment"}
+                                                                </GlowButton>
+                                                            </>
+                                                        )}
                                                     </div>
-                                                    <GlowButton
-                                                        className="w-full"
-                                                        variant="primary"
-                                                        disabled={!proofUrl || !paymentType || isSubmittingPayment}
-                                                        onClick={handlePaymentSubmit}
-                                                    >
-                                                        {isSubmittingPayment ? "Submitting..." : "Submit Payment"}
-                                                    </GlowButton>
                                                 </div>
                                             </div>
                                         ) : order.paymentStatus.startsWith('verify') ? (

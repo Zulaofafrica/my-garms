@@ -45,7 +45,7 @@ export interface FeedbackEntry {
     id: string;
     userId: string;
     userName: string;
-    action: 'approve' | 'suggest_edit' | 'request_change' | 'set_price';
+    action: 'approve' | 'suggest_edit' | 'request_change' | 'set_price' | 'reply';
     comment: string;
     attachmentUrl?: string;
     timestamp: string;
@@ -91,6 +91,26 @@ export interface DbOrder {
     urgency?: 'flexible' | 'standard' | 'urgent';
     budgetRange?: 'budget' | 'standard' | 'premium';
     fabricSource?: 'platform' | 'own' | 'unsure';
+
+    // Pricing Breakdown
+    priceBreakdown?: {
+        fabric: number;
+        labor: number;
+        customization: number;
+        delivery: number; // Fixed at 5000
+    };
+
+    // Delivery Details
+    deliveryDetails?: {
+        fullName: string;
+        phone: string;
+        address: string;
+        city: string;
+        state?: string; // Optional, might be useful for Nigeria
+        country: 'Nigeria'; // Fixed
+        landmark?: string;
+        instructions?: string;
+    };
 
     color?: string;
     notes?: string;

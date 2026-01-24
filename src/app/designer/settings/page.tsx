@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { designerApi } from "@/lib/api-client";
 import { ArrowLeft, Save, Briefcase, Power, Layers } from "lucide-react";
+import { CATEGORIES, STYLES } from "@/components/design-flow/CategoryStyleForm";
 
 export default function DesignerSettingsPage() {
     const router = useRouter();
@@ -58,21 +59,16 @@ export default function DesignerSettingsPage() {
         }
     };
 
-    const addSpecialty = () => {
-        if (newSpecialty && !formData.specialties.includes(newSpecialty)) {
-            setFormData(prev => ({
+    const toggleSpecialty = (item: string) => {
+        setFormData(prev => {
+            const exists = prev.specialties.includes(item);
+            return {
                 ...prev,
-                specialties: [...prev.specialties, newSpecialty]
-            }));
-            setNewSpecialty("");
-        }
-    };
-
-    const removeSpecialty = (item: string) => {
-        setFormData(prev => ({
-            ...prev,
-            specialties: prev.specialties.filter(s => s !== item)
-        }));
+                specialties: exists
+                    ? prev.specialties.filter(s => s !== item)
+                    : [...prev.specialties, item]
+            };
+        });
     };
 
     if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">Loading...</div>;
@@ -164,33 +160,53 @@ export default function DesignerSettingsPage() {
                             </div>
                         </div>
 
-                        <div className="flex gap-2 mb-4">
-                            <input
-                                type="text"
-                                value={newSpecialty}
-                                onChange={(e) => setNewSpecialty(e.target.value)}
-                                placeholder="Add skill (e.g. Wedding, Suits)"
-                                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                                onKeyDown={(e) => e.key === 'Enter' && addSpecialty()}
-                            />
-                            <button
-                                onClick={addSpecialty}
-                                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg font-medium transition-colors"
-                            >
-                                Add
-                            </button>
-                        </div>
+                        <div className="space-y-8">
+                            {/* Categories */}
+                            <div>
+                                <h3 className="text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider">Outfit Categories</h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {CATEGORIES.map(cat => {
+                                        const isSelected = formData.specialties.includes(cat.id);
+                                        return (
+                                            <button
+                                                key={cat.id}
+                                                onClick={() => toggleSpecialty(cat.id)}
+                                                className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all flex items-center gap-2
+                                                    ${isSelected
+                                                        ? 'bg-indigo-500 text-white border-indigo-500'
+                                                        : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                                                    }`}
+                                            >
+                                                <span>{cat.icon}</span>
+                                                {cat.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
 
-                        <div className="flex flex-wrap gap-2">
-                            {formData.specialties.map(tag => (
-                                <span key={tag} className="px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-sm border border-indigo-500/30 flex items-center gap-2">
-                                    {tag}
-                                    <button onClick={() => removeSpecialty(tag)} className="hover:text-white">&times;</button>
-                                </span>
-                            ))}
-                            {formData.specialties.length === 0 && (
-                                <span className="text-slate-500 text-sm italic">No specialties added yet.</span>
-                            )}
+                            {/* Styles */}
+                            <div>
+                                <h3 className="text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider">Style Aesthetics</h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {STYLES.map(style => {
+                                        const isSelected = formData.specialties.includes(style.id);
+                                        return (
+                                            <button
+                                                key={style.id}
+                                                onClick={() => toggleSpecialty(style.id)}
+                                                className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all
+                                                    ${isSelected
+                                                        ? 'bg-purple-500 text-white border-purple-500'
+                                                        : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                                                    }`}
+                                            >
+                                                {style.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                         </div>
                     </div>
 

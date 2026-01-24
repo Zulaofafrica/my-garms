@@ -6,10 +6,12 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles } from "lucide-react";
 import { authApi } from "@/lib/api-client";
+import { useAuth } from "@/lib/auth-context";
 import styles from "../auth.module.css";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -35,14 +37,16 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await authApi.login({
+      const user = await login({
         email: formData.email,
         password: formData.password,
       });
 
-      // Redirect to profile page on success
-      router.push("/profile");
-      router.refresh(); // Refresh to update navbar auth state
+      if (user.role === 'designer') {
+        router.push("/designer");
+      } else {
+        router.push("/profile");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid email or password");
     } finally {

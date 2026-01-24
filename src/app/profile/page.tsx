@@ -37,7 +37,13 @@ export default function ProfilePage() {
         const loadInitialData = async () => {
             try {
                 // Check auth first
-                await authApi.me();
+                const me = await authApi.me();
+
+                // Redirect designers to their portal
+                if (me.user.role === 'designer') {
+                    router.push('/designer');
+                    return;
+                }
 
                 // Fetch profiles and orders in parallel
                 const [profilesData, ordersData] = await Promise.all([

@@ -10,13 +10,14 @@ import * as z from "zod";
 import { ArrowRight, ArrowLeft } from "lucide-react";
 import { ImageUpload } from "./image-upload";
 import { SpecForm } from "./spec-form";
-import { StyleQuiz } from "./style-quiz";
+import { CategoryStyleForm } from "./CategoryStyleForm";
 
 const formSchema = z.object({
     images: z.array(z.any()).min(1, "Please upload at least one image"),
+    category: z.string().min(1, "Please select a category"),
     fabric: z.string().optional(),
     color: z.string().optional(),
-    style: z.string().optional(),
+    style: z.string().min(1, "Please select a style"),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -85,6 +86,7 @@ export function DesignRequestWizard() {
                 fabricName: data.fabric || "Custom Fabric",
                 total: 0, // 0 indicates "Calculating" for now, designer sets price
                 images: imageUrls,
+                category: data.category as any, // Add category to order
                 style: data.style,
                 color: data.color,
                 notes: "Please review my design request.",
@@ -152,7 +154,7 @@ export function DesignRequestWizard() {
                                 </div>
                             )}
                             {currentStep === 2 && <SpecForm />}
-                            {currentStep === 3 && <StyleQuiz />}
+                            {currentStep === 3 && <CategoryStyleForm />}
                         </motion.div>
                     </AnimatePresence>
 

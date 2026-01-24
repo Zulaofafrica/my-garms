@@ -21,7 +21,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
         const { id } = await params;
         const body = await request.json();
-        const { action, comment, price, attachmentUrl } = body;
+        const { action, comment, price, priceBreakdown, attachmentUrl } = body;
 
         if (!action || !comment) {
             return NextResponse.json({ error: 'Action and comment are required' }, { status: 400 });
@@ -71,7 +71,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             assignedDesignerId: user.id, // Assign to this designer if not already
             feedbackLog: [...(order.feedbackLog || []), feedbackEntry],
             updatedAt: new Date().toISOString(),
-            ...(body.estimatedCompletionDate ? { estimatedCompletionDate: body.estimatedCompletionDate } : {})
+            ...(body.estimatedCompletionDate ? { estimatedCompletionDate: body.estimatedCompletionDate } : {}),
+            ...(priceBreakdown ? { priceBreakdown } : {})
         };
 
         const updatedOrder = await updateOne<DbOrder>('orders', id, updates);

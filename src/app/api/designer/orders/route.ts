@@ -21,9 +21,9 @@ export async function GET() {
         const allOrders = await readCollection<DbOrder>('orders');
 
         // Filter orders for the designer
+        // Only show orders explicitly assigned to this designer
         const designerOrders = allOrders.filter(order =>
-            order.assignedDesignerId === user.id ||
-            (order.status === 'pending' && !order.assignedDesignerId)
+            order.assignedDesignerId === user.id
         );
 
         // Sort by date (newest first)

@@ -6,10 +6,12 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles, Scissors, Briefcase } from "lucide-react";
 import { authApi } from "@/lib/api-client";
+import { useAuth } from "@/lib/auth-context";
 import styles from "../auth.module.css";
 
 export default function SignUpPage() {
   const router = useRouter();
+  const { signup } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -60,7 +62,7 @@ export default function SignUpPage() {
     setIsLoading(true);
 
     try {
-      await authApi.signup({
+      await signup({
         email: formData.email,
         password: formData.password,
         firstName: formData.firstName,
@@ -74,7 +76,7 @@ export default function SignUpPage() {
       } else {
         router.push("/profile");
       }
-      router.refresh(); // Refresh to update navbar auth state
+      // router.refresh(); // Context signup already refreshes? No, check provider... Provider calls refresh.
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create account");
     } finally {

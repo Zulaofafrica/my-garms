@@ -105,6 +105,7 @@ export const ordersApi = {
         fabricName: string;
         total: number;
         images?: string[];
+        category?: string;
         style?: string;
         color?: string;
         notes?: string;
@@ -128,6 +129,28 @@ export const ordersApi = {
         return fetchApi<{ order: Order; message: string }>(`/orders/${id}/payment`, {
             method: 'POST',
             body: JSON.stringify(data),
+        });
+    },
+
+    submitDeliveryDetails: async (id: string, data: {
+        fullName: string;
+        phone: string;
+        address: string;
+        city: string;
+        state?: string;
+        landmark?: string;
+        instructions?: string;
+    }) => {
+        return fetchApi<{ order: Order; message: string }>(`/orders/${id}/delivery`, {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    },
+
+    submitReply: async (id: string, data: { comment: string }) => {
+        return fetchApi<{ order: Order; message: string }>(`/orders/${id}/feedback`, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'reply', ...data }),
         });
     },
 };
@@ -158,6 +181,7 @@ export const designerApi = {
         action: 'approve' | 'suggest_edit' | 'request_change' | 'set_price';
         comment: string;
         price?: number;
+        priceBreakdown?: { fabric: number; labor: number; customization: number; delivery: number; };
         attachmentUrl?: string;
     }) => {
         return fetchApi<{ order: Order; message: string }>(`/designer/orders/${orderId}/feedback`, {
@@ -229,7 +253,7 @@ export interface FeedbackLogEntry {
     id: string;
     userId: string;
     userName: string;
-    action: 'approve' | 'suggest_edit' | 'request_change' | 'set_price';
+    action: 'approve' | 'suggest_edit' | 'request_change' | 'set_price' | 'reply';
     comment: string;
     attachmentUrl?: string; // Optional image attachment
     timestamp: string;
@@ -248,7 +272,30 @@ export interface Order {
     feedbackLog: FeedbackLogEntry[];
     total: number;
     price: number | null;
+    priceBreakdown?: {
+        fabric: number;
+        labor: number;
+        customization: number;
+        delivery: number;
+    };
+    deliveryDetails?: {
+        fullName: string;
+        phone: string;
+        address: string;
+        city: string;
+        state?: string;
+        country: 'Nigeria';
+        landmark?: string;
+        instructions?: string;
+    };
     images: string[];
+    // Matching Fields
+    category?: 'dress' | 'suit' | 'shirt' | 'native' | 'jacket' | 'two-piece' | 'other';
+    complexity?: 'simple' | 'moderate' | 'detailed';
+    urgency?: 'flexible' | 'standard' | 'urgent';
+    budgetRange?: 'budget' | 'standard' | 'premium';
+    fabricSource?: 'platform' | 'own' | 'unsure';
+
     style?: string;
     color?: string;
     notes?: string;

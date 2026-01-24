@@ -37,8 +37,11 @@ export default function DesignerDashboard() {
                 // Load orders
                 const data = await designerApi.listOrders();
                 setOrders(data.orders);
-            } catch (err) {
-                console.error("Dashboard load error:", err);
+            } catch (err: any) {
+                // Only log real errors, not expected auth failures
+                if (err.message !== 'Not authenticated') {
+                    console.error("Dashboard load error:", err);
+                }
                 router.push("/auth/login");
             } finally {
                 setIsLoading(false);

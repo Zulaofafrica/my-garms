@@ -5,7 +5,7 @@ import { useFormContext } from "react-hook-form";
 import { cn } from "@/lib/utils";
 import { Check, User, Briefcase, Shirt, Gem } from "lucide-react";
 
-const CATEGORIES = [
+export const CATEGORIES = [
     { id: 'dress', label: 'Dress', icon: '👗' },
     { id: 'suit', label: 'Suit', icon: '👔' },
     { id: 'shirt', label: 'Shirt / Top', icon: '👕' },
@@ -14,7 +14,7 @@ const CATEGORIES = [
     { id: 'jacket', label: 'Jacket / Outerwear', icon: '🧥' },
 ];
 
-const STYLES = [
+export const STYLES = [
     { id: 'casual', label: 'Casual', desc: 'Relaxed & Comfortable' },
     { id: 'formal', label: 'Formal / Business', desc: 'Sharp & Structured' },
     { id: 'traditional', label: 'Traditional', desc: 'Cultural & Heritage' },

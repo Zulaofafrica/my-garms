@@ -68,7 +68,12 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
         loadOrderData();
     }, [params, router]);
 
-    const [priceInput, setPriceInput] = useState("");
+    const [breakdown, setBreakdown] = useState({
+        fabric: 0,
+        labor: 0,
+        customization: 0,
+        delivery: 5000 // Fixed
+    });
     const [attachmentUrl, setAttachmentUrl] = useState("");
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
@@ -113,9 +118,12 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
     const handleAction = async (action: 'suggest_edit' | 'request_change' | 'set_price') => {
         if (!order) return;
 
-        if (action === 'set_price' && !priceInput) {
-            alert("Please enter a price.");
-            return;
+        if (action === 'set_price') {
+            const totalPrice = breakdown.fabric + breakdown.labor + breakdown.customization + breakdown.delivery;
+            if (totalPrice <= 5000) { // Should be more than just delivery
+                alert("Please enter valid costs for fabric/labor.");
+                return;
+            }
         }
 
         if (action !== 'set_price' && !comment.trim()) {
@@ -125,10 +133,16 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
 
         setIsSubmitting(true);
         try {
-            const payload: any = { action, comment: comment || (action === 'set_price' ? `Price set to ₦${Number(priceInput).toLocaleString()}` : "") };
+            const totalPrice = breakdown.fabric + breakdown.labor + breakdown.customization + breakdown.delivery;
+
+            const payload: any = {
+                action,
+                comment: comment || (action === 'set_price' ? `Price Quote: ₦${totalPrice.toLocaleString()} (Includes Delivery)` : "")
+            };
 
             if (action === 'set_price') {
-                payload.price = Number(priceInput);
+                payload.price = totalPrice;
+                payload.priceBreakdown = breakdown;
                 if (endDate) payload.estimatedCompletionDate = endDate;
             }
 
@@ -140,7 +154,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
             setOrder(data.order);
             setComment("");
             setAttachmentUrl("");
-            if (action === 'set_price') setPriceInput("");
+            // Do not reset breakdown so they see what they sent, or maybe reset?
 
             alert("Update submitted successfully!");
         } catch (err) {
@@ -263,6 +277,47 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                 </div>
 
                 <aside className={styles.sidebarActions}>
+                    {/* Delivery Information (Visible ONLY after Full Payment) */}
+                    {order.paymentStatus === 'paid_100' && (
+                        <section className={styles.card} style={{ borderColor: 'var(--green)', background: 'rgba(34, 197, 94, 0.03)' }}>
+                            <h2 className={styles.cardTitle} style={{ color: 'var(--green)' }}>
+                                <Package size={20} /> Delivery Details
+                            </h2>
+                            {order.deliveryDetails ? (
+                                <div className={styles.feedbackForm}>
+                                    <div className={styles.measurementItem}>
+                                        <span className={styles.label}>Recipient</span>
+                                        <span className={styles.value}>{order.deliveryDetails.fullName}</span>
+                                    </div>
+                                    <div className={styles.measurementItem}>
+                                        <span className={styles.label}>Contact</span>
+                                        <span className={styles.value}>{order.deliveryDetails.phone}</span>
+                                    </div>
+                                    <div className={styles.measurementItem}>
+                                        <span className={styles.label}>Address</span>
+                                        <span className={styles.value}>{order.deliveryDetails.address}, {order.deliveryDetails.city}</span>
+                                    </div>
+                                    {order.deliveryDetails.landmark && (
+                                        <div className={styles.measurementItem}>
+                                            <span className={styles.label}>Landmark</span>
+                                            <span className={styles.value}>{order.deliveryDetails.landmark}</span>
+                                        </div>
+                                    )}
+                                    {order.deliveryDetails.instructions && (
+                                        <div className={styles.measurementItem}>
+                                            <span className={styles.label}>Instructions</span>
+                                            <span className={styles.value}>{order.deliveryDetails.instructions}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className={styles.emptyState}>
+                                    <p className={styles.muted}>Delivery details not yet provided.</p>
+                                </div>
+                            )}
+                        </section>
+                    )}
+
                     {/* Payment Verification Card */}
                     {order.paymentStatus && order.paymentStatus.startsWith('verify') && (
                         <section className={styles.card} style={{ borderColor: 'var(--accent)', background: 'rgba(99, 102, 241, 0.03)' }}>
@@ -357,18 +412,55 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
 
                     {/* Pricing Card */}
                     <section className={styles.card}>
-                        <h2 className={styles.cardTitle}>Set Pricing</h2>
+                        <h2 className={styles.cardTitle}>Set Pricing Breakdown</h2>
                         <div className={styles.feedbackForm}>
                             <div className={styles.inputGroup}>
-                                <label className={styles.label}>Total Cost (₦)</label>
+                                <label className={styles.label}>Fabric Cost (₦)</label>
                                 <input
                                     type="number"
                                     className={styles.input}
-                                    placeholder="e.g. 25000"
-                                    value={priceInput}
-                                    onChange={(e) => setPriceInput(e.target.value)}
+                                    placeholder="0"
+                                    value={breakdown.fabric}
+                                    onChange={(e) => setBreakdown({ ...breakdown, fabric: Number(e.target.value) })}
                                 />
                             </div>
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Labor Cost (₦)</label>
+                                <input
+                                    type="number"
+                                    className={styles.input}
+                                    placeholder="0"
+                                    value={breakdown.labor}
+                                    onChange={(e) => setBreakdown({ ...breakdown, labor: Number(e.target.value) })}
+                                />
+                            </div>
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Customization (₦)</label>
+                                <input
+                                    type="number"
+                                    className={styles.input}
+                                    placeholder="0"
+                                    value={breakdown.customization}
+                                    onChange={(e) => setBreakdown({ ...breakdown, customization: Number(e.target.value) })}
+                                />
+                            </div>
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Delivery Fee (Fixed)</label>
+                                <input
+                                    type="text"
+                                    className={`${styles.input} bg-slate-900 text-slate-400`}
+                                    value="₦5,000"
+                                    disabled
+                                />
+                            </div>
+
+                            <div className="bg-white/5 p-3 rounded-lg border border-white/10 mb-4 flex justify-between items-center">
+                                <span className={styles.label} style={{ marginBottom: 0 }}>Total Price:</span>
+                                <span className="text-xl font-bold text-white">
+                                    ₦{(breakdown.fabric + breakdown.labor + breakdown.customization + breakdown.delivery).toLocaleString()}
+                                </span>
+                            </div>
+
                             <div className={styles.inputGroup}>
                                 <label className={styles.label}>Estimated Completion</label>
                                 <input
@@ -381,10 +473,10 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                             <button
                                 className={`${styles.button} ${styles.approveBtn}`}
                                 onClick={() => handleAction('set_price')}
-                                disabled={isSubmitting || !priceInput || !endDate}
+                                disabled={isSubmitting || !endDate}
                                 style={{ width: '100%', justifyContent: 'center' }}
                             >
-                                Update Price & Schedule
+                                Submit Quote
                             </button>
                             {order.price && (
                                 <p className={styles.muted} style={{ textAlign: 'center', marginTop: '0.5rem' }}>

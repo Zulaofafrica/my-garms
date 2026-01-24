@@ -29,15 +29,25 @@ export class MatchingService {
         // 2. Filter by Capacity
         let eligible = availableDesigners.filter(d => d.currentLoad < d.maxCapacity);
 
-        // 3. Filter by Category (Specialties) - STRICT MATCH
-        const orderCategory = (order.category || order.templateName || '').toLowerCase();
-        if (orderCategory && orderCategory !== 'other') {
-            eligible = eligible.filter(d =>
-                d.specialties.some(s => s.toLowerCase().includes(orderCategory))
-            );
+        // 3. Filter by Category (Strict)
+        if (order.category) {
+            eligible = eligible.filter(d => d.specialties.some(s => s === order.category));
+        } else if (order.templateName && order.templateName !== 'custom-template') {
+            // Fallback for legacy/other orders
+            const term = order.templateName.toLowerCase();
+            eligible = eligible.filter(d => d.specialties.some(s => s.toLowerCase().includes(term)));
         }
 
-        // 4. Filter by Complexity (Skill Level)
+        // 4. Filter by Style (Refinement - Prefer Style Match)
+        if (order.style && eligible.length > 0) {
+            const styleMatches = eligible.filter(d => d.specialties.includes(order.style!));
+            if (styleMatches.length > 0) {
+                console.log(`Refined matches by style ${order.style}: ${styleMatches.length} designers`);
+                eligible = styleMatches;
+            }
+        }
+
+        // 5. Filter by Complexity (Skill Level)
         // simple -> basic+, moderate -> advanced+, detailed -> premium
         if (order.complexity) {
             eligible = eligible.filter(d => {
@@ -47,9 +57,6 @@ export class MatchingService {
                 return true;
             });
         }
-
-        // 5. Default Specialty Fallback (if no strict category match found, try fuzzy style match)
-        // If we filtered down to 0, maybe relax? For now, strict.
 
         // 6. Sort by Rating (desc) and Load (asc)
         eligible.sort((a, b) => {

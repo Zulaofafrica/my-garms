@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { profileId, templateId, templateName, fabricId, fabricName, total, images, style, color, notes } = body;
+        const { profileId, templateId, templateName, fabricId, fabricName, total, images, category, style, color, notes } = body;
 
         // Validate required fields
         if (!profileId || !templateId || !fabricId) {
@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
             total: Number(total), // Estimated total
             price: null, // Initial price is calculating
             images: images || [],
+            category,
             style,
             color,
             notes,

@@ -6,34 +6,17 @@ import { useRouter } from "next/navigation"
 import { Menu, X, ShoppingBag, User as UserIcon, LogOut } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { authApi, User } from "@/lib/api-client"
+import { useAuth } from "@/lib/auth-context"
 
 export function Navbar() {
     const [isOpen, setIsOpen] = React.useState(false)
-    const [user, setUser] = React.useState<User | null>(null)
-    const [isLoading, setIsLoading] = React.useState(true)
     const router = useRouter()
-
-    React.useEffect(() => {
-        const checkAuth = async () => {
-            try {
-                const data = await authApi.me()
-                setUser(data.user)
-            } catch {
-                setUser(null)
-            } finally {
-                setIsLoading(false)
-            }
-        }
-        checkAuth()
-    }, [])
+    const { user, isLoading, logout } = useAuth();
 
     const handleLogout = async () => {
         try {
-            await authApi.logout()
-            setUser(null)
-            router.push("/")
-            router.refresh()
+            await logout()
+            setIsOpen(false)
         } catch (error) {
             console.error("Logout failed:", error)
         }
@@ -48,38 +31,51 @@ export function Navbar() {
 
                 {/* Desktop Nav */}
                 <nav className="hidden gap-6 md:flex">
-                    <Link href="/gallery" className="text-sm font-medium transition-colors hover:text-primary">
-                        Collections
-                    </Link>
-                    <Link href="/design" className="text-sm font-medium transition-colors hover:text-primary">
-                        Design
-                    </Link>
-                    <Link href="/profile" className="text-sm font-medium transition-colors hover:text-primary">
-                        My Profile
-                    </Link>
-                    {user?.role === 'designer' && (
+                    {/* Designer View: Only Designer Portal */}
+                    {user?.role === 'designer' ? (
                         <Link href="/designer" className="text-sm font-medium transition-colors hover:text-primary">
                             Designer Portal
                         </Link>
+                    ) : (
+                        /* Customer / Guest View */
+                        <>
+                            <Link href="/gallery" className="text-sm font-medium transition-colors hover:text-primary">
+                                Collections
+                            </Link>
+                            <Link href="/design" className="text-sm font-medium transition-colors hover:text-primary">
+                                Design
+                            </Link>
+                            {user && (
+                                <Link href="/profile" className="text-sm font-medium transition-colors hover:text-primary">
+                                    My Profile
+                                </Link>
+                            )}
+                        </>
                     )}
                 </nav>
 
                 {/* Desktop Actions */}
                 <div className="hidden items-center gap-4 md:flex">
-                    <Button variant="ghost" size="icon">
-                        <ShoppingBag className="h-5 w-5" />
-                        <span className="sr-only">Cart</span>
-                    </Button>
+                    {/* Cart only for customers/guests? Leaving it for now, as designers might buy too? Or maybe hide it? 
+                        User said "only Designer portal". I will hide cart for designers just in case.
+                    */}
+                    {user?.role !== 'designer' && (
+                        <Button variant="ghost" size="icon">
+                            <ShoppingBag className="h-5 w-5" />
+                            <span className="sr-only">Cart</span>
+                        </Button>
+                    )}
 
                     {!isLoading && (
                         user ? (
-                            <>
-                                <Link href="/profile">
-                                    <Button variant="ghost" size="icon" className="rounded-full">
-                                        <UserIcon className="h-5 w-5" />
-                                    </Button>
-                                </Link>
-                            </>
+                            <div className="flex items-center gap-4">
+                                <span className="text-sm text-muted-foreground hidden lg:inline-block">
+                                    {user.firstName}
+                                </span>
+                                <Button variant="ghost" size="icon" className="rounded-full" onClick={handleLogout} title="Sign Out">
+                                    <LogOut className="h-5 w-5 text-muted-foreground hover:text-red-400" />
+                                </Button>
+                            </div>
                         ) : (
                             <>
                                 <Link href="/auth/login">
@@ -95,9 +91,11 @@ export function Navbar() {
 
                 {/* Mobile Menu Toggle */}
                 <div className="flex items-center md:hidden">
-                    <Button variant="ghost" size="icon">
-                        <ShoppingBag className="h-5 w-5 mr-2" />
-                    </Button>
+                    {user?.role !== 'designer' && (
+                        <Button variant="ghost" size="icon">
+                            <ShoppingBag className="h-5 w-5 mr-2" />
+                        </Button>
+                    )}
                     <Button
                         variant="ghost"
                         size="icon"
@@ -114,28 +112,7 @@ export function Navbar() {
             {isOpen && (
                 <div className="md:hidden border-t p-4 bg-background">
                     <nav className="grid gap-4">
-                        <Link
-                            href="/gallery"
-                            className="text-sm font-medium transition-colors hover:text-primary"
-                            onClick={() => setIsOpen(false)}
-                        >
-                            Collections
-                        </Link>
-                        <Link
-                            href="/design"
-                            className="text-sm font-medium transition-colors hover:text-primary"
-                            onClick={() => setIsOpen(false)}
-                        >
-                            Design
-                        </Link>
-                        <Link
-                            href="/profile"
-                            className="text-sm font-medium transition-colors hover:text-primary"
-                            onClick={() => setIsOpen(false)}
-                        >
-                            My Profile
-                        </Link>
-                        {user?.role === 'designer' && (
+                        {user?.role === 'designer' ? (
                             <Link
                                 href="/designer"
                                 className="text-sm font-medium transition-colors hover:text-primary"
@@ -143,16 +120,44 @@ export function Navbar() {
                             >
                                 Designer Portal
                             </Link>
+                        ) : (
+                            <>
+                                <Link
+                                    href="/gallery"
+                                    className="text-sm font-medium transition-colors hover:text-primary"
+                                    onClick={() => setIsOpen(false)}
+                                >
+                                    Collections
+                                </Link>
+                                <Link
+                                    href="/design"
+                                    className="text-sm font-medium transition-colors hover:text-primary"
+                                    onClick={() => setIsOpen(false)}
+                                >
+                                    Design
+                                </Link>
+                                {user && (
+                                    <Link
+                                        href="/profile"
+                                        className="text-sm font-medium transition-colors hover:text-primary"
+                                        onClick={() => setIsOpen(false)}
+                                    >
+                                        My Profile
+                                    </Link>
+                                )}
+                            </>
                         )}
+
                         <div className="flex flex-col gap-2 mt-4">
                             {!isLoading && (
                                 user ? (
                                     <>
-                                        <div className="text-sm text-muted-foreground px-2">
-                                            Signed in as {user.firstName} {user.lastName}
+                                        <div className="text-sm text-muted-foreground px-2 pb-2 border-b mb-2">
+                                            Signed in as <span className="font-semibold text-foreground">{user.firstName} {user.lastName}</span>
+                                            <div className="text-xs opacity-70 capitalize">{user.role} Account</div>
                                         </div>
-                                        <Button variant="outline" className="w-full" onClick={() => { handleLogout(); setIsOpen(false); }}>
-                                            Sign Out
+                                        <Button variant="outline" className="w-full justify-start text-red-400 hover:text-red-500 hover:bg-red-500/10" onClick={handleLogout}>
+                                            <LogOut className="mr-2 h-4 w-4" /> Sign Out
                                         </Button>
                                     </>
                                 ) : (

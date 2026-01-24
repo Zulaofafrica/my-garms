@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { designerApi, Order } from "@/lib/api-client";
-import { ArrowLeft, Check, X, Clock, DollarSign, Shirt } from "lucide-react";
+import { ArrowLeft, Check, X, Clock, DollarSign, Shirt, Tag, Gauge, Zap, Layers } from "lucide-react";
 import styles from "../../designer.module.css";
 // Reuse designer.module.css assuming it exists, or use tailwind classes.
 // Checked previous logs, designer.module.css exists.
@@ -102,7 +102,35 @@ export default function DesignerRequestsPage() {
 
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                         <div className="bg-white/5 p-3 rounded-lg">
-                                            <span className="block text-slate-500 text-xs uppercase tracking-wider mb-1">Fabric</span>
+                                            <span className="block text-slate-500 text-xs uppercase tracking-wider mb-1 flex items-center gap-1">
+                                                <Tag size={10} /> Category
+                                            </span>
+                                            <span className="text-white font-medium capitalize">{request.category || "Unspecified"}</span>
+                                        </div>
+                                        <div className="bg-white/5 p-3 rounded-lg">
+                                            <span className="block text-slate-500 text-xs uppercase tracking-wider mb-1 flex items-center gap-1">
+                                                <Shirt size={10} /> Fabric Source
+                                            </span>
+                                            <span className="text-white font-medium capitalize">{request.fabricSource || "Unsure"}</span>
+                                        </div>
+                                        <div className="bg-white/5 p-3 rounded-lg">
+                                            <span className="block text-slate-500 text-xs uppercase tracking-wider mb-1 flex items-center gap-1">
+                                                <Gauge size={10} /> Complexity
+                                            </span>
+                                            <span className={`font-medium capitalize ${request.complexity === 'detailed' ? 'text-purple-400' : 'text-white'}`}>
+                                                {request.complexity || "Moderate"}
+                                            </span>
+                                        </div>
+                                        <div className="bg-white/5 p-3 rounded-lg">
+                                            <span className="block text-slate-500 text-xs uppercase tracking-wider mb-1 flex items-center gap-1">
+                                                <Zap size={10} /> Urgency
+                                            </span>
+                                            <span className={`font-medium capitalize ${request.urgency === 'urgent' ? 'text-red-400' : 'text-white'}`}>
+                                                {request.urgency || "Standard"}
+                                            </span>
+                                        </div>
+                                        <div className="bg-white/5 p-3 rounded-lg">
+                                            <span className="block text-slate-500 text-xs uppercase tracking-wider mb-1">Fabric Type</span>
                                             <span className="text-white font-medium">{request.fabricName}</span>
                                         </div>
                                         <div className="bg-white/5 p-3 rounded-lg">
@@ -112,13 +140,12 @@ export default function DesignerRequestsPage() {
                                         <div className="bg-white/5 p-3 rounded-lg">
                                             <span className="block text-slate-500 text-xs uppercase tracking-wider mb-1">Budget</span>
                                             <span className="text-white font-medium flex items-center gap-1">
-                                                {/* Budget isn't set yet usually, but Total might exist */}
                                                 <DollarSign size={14} className="text-green-400" />
                                                 {request.total > 0 ? `~₦${request.total.toLocaleString()}` : "To Quote"}
                                             </span>
                                         </div>
                                         {/* Images Preview */}
-                                        {request.images.length > 0 && (
+                                        {request.images && request.images.length > 0 && (
                                             <div className="relative aspect-square rounded-lg overflow-hidden border border-white/10">
                                                 <img src={request.images[0]} alt="Ref" className="object-cover w-full h-full" />
                                                 {request.images.length > 1 && (
