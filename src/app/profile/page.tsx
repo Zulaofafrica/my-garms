@@ -331,6 +331,13 @@ export default function ProfilePage() {
                                                 <span className={styles.orderPrice}>
                                                     {order.price ? `₦${order.price.toLocaleString()}` : 'Calculating...'}
                                                 </span>
+                                                {order.disputeStatus && order.disputeStatus !== 'none' && (
+                                                    <Link href={`/dashboard/${order.id}/dispute`}>
+                                                        <button className={`${styles.trackBtn} bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20`}>
+                                                            Dispute
+                                                        </button>
+                                                    </Link>
+                                                )}
                                                 <Link href={`/dashboard/${order.id}`}>
                                                     <button className={styles.trackBtn}>Details</button>
                                                 </Link>

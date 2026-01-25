@@ -34,6 +34,14 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Check if user is suspended or disabled
+        if (user.status === 'suspended' || user.status === 'disabled') {
+            return NextResponse.json(
+                { error: 'Your account has been suspended. Please contact support@mygarms.com.' },
+                { status: 403 }
+            );
+        }
+
         // Set session cookie
         await setSession(user.id);
 

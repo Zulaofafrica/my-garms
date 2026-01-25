@@ -56,6 +56,21 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
         const updatedOrder = await updateOne<DbOrder>('orders', id, updates);
 
+        // Notify Designer if assigned
+        if (order.assignedDesignerId) {
+            const { NotificationService } = await import('@/lib/notification-service');
+            await NotificationService.notify(
+                order.assignedDesignerId,
+                'order_update',
+                `New feedback from ${user.firstName} on Order #${order.id.slice(0, 8)}`,
+                {
+                    to: 'designer@example.com',
+                    subject: 'New Customer Feedback',
+                    htmlBody: `<p>Customer says: "${comment}"</p>`
+                }
+            );
+        }
+
         return NextResponse.json({
             order: updatedOrder,
             message: 'Reply sent successfully',

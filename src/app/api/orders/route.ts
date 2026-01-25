@@ -79,6 +79,21 @@ export async function POST(request: NextRequest) {
             await MatchingService.shortlistDesigners(order.id);
         } catch (e) { console.error("Matching error:", e); }
 
+        // Notify User (Confirmation)
+        try {
+            const { NotificationService } = await import('@/lib/notification-service');
+            await NotificationService.notify(
+                session.userId,
+                'system',
+                `We received your request for "${order.templateName}". We are matching you with a designer now!`,
+                {
+                    to: 'customer@example.com', // Fetch user email in real app
+                    subject: 'Order Received - MyGarms',
+                    htmlBody: `<p>Thanks for your order #${order.id}. We are finding a designer for you.</p>`
+                }
+            );
+        } catch (e) { console.error("Notification error:", e); }
+
         return NextResponse.json({
             order,
             message: 'Order created successfully. Matching with designers...'

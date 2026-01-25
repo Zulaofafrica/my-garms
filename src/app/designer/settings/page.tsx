@@ -4,19 +4,26 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { designerApi } from "@/lib/api-client";
-import { ArrowLeft, Save, Briefcase, Power, Layers } from "lucide-react";
+import { ArrowLeft, Save, Briefcase, Power, Layers, Wallet, MapPin, Phone, Building2, UserCircle, Pencil, X } from "lucide-react";
 import { CATEGORIES, STYLES } from "@/components/design-flow/CategoryStyleForm";
 
 export default function DesignerSettingsPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [editPayment, setEditPayment] = useState(true);
 
     const [formData, setFormData] = useState({
         status: 'available',
         maxCapacity: 5,
         specialties: [] as string[],
-        currentLoad: 0
+        currentLoad: 0,
+        bankName: '',
+        accountNumber: '',
+        accountName: '',
+        workshopAddress: '',
+        phoneNumber: '',
+        identificationUrl: ''
     });
 
     const [newSpecialty, setNewSpecialty] = useState("");
@@ -29,11 +36,20 @@ export default function DesignerSettingsPage() {
         try {
             const data = await designerApi.getSettings();
             if (data.profile) {
+                const hasPaymentDetails = !!data.profile.bankName;
+                setEditPayment(!hasPaymentDetails);
+
                 setFormData({
                     status: data.profile.status,
                     maxCapacity: data.profile.maxCapacity,
                     specialties: data.profile.specialties || [],
-                    currentLoad: data.profile.currentLoad
+                    currentLoad: data.profile.currentLoad,
+                    bankName: data.profile.bankName || '',
+                    accountNumber: data.profile.accountNumber || '',
+                    accountName: data.profile.accountName || '',
+                    workshopAddress: data.profile.workshopAddress || '',
+                    phoneNumber: data.profile.phoneNumber || '',
+                    identificationUrl: data.profile.identificationUrl || ''
                 });
             }
         } catch (error) {
@@ -44,14 +60,25 @@ export default function DesignerSettingsPage() {
     };
 
     const handleSave = async () => {
+        if (!formData.bankName || !formData.accountNumber || !formData.identificationUrl) {
+            alert("Please fill in all mandatory fields (Bank, Account, NIN).");
+            return;
+        }
         setSaving(true);
         try {
             await designerApi.updateSettings({
                 status: formData.status as any,
                 maxCapacity: formData.maxCapacity,
-                specialties: formData.specialties
+                specialties: formData.specialties,
+                bankName: formData.bankName,
+                accountNumber: formData.accountNumber,
+                accountName: formData.accountName,
+                workshopAddress: formData.workshopAddress,
+                phoneNumber: formData.phoneNumber,
+                identificationUrl: formData.identificationUrl
             });
             alert("Settings saved successfully!");
+            setEditPayment(false);
         } catch (error) {
             alert("Failed to save settings");
         } finally {
@@ -208,6 +235,149 @@ export default function DesignerSettingsPage() {
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Personal & Bank Details Card */}
+                    <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+                        <div className="flex items-start justify-between mb-6">
+                            <div className="flex items-start gap-4">
+                                <div className="p-3 bg-emerald-500/20 rounded-lg text-emerald-300">
+                                    <Wallet size={24} />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-bold text-white">Payment & Verification</h2>
+                                    <p className="text-slate-400 text-sm">Details for receiving payments and verifying your identity.</p>
+                                </div>
+                            </div>
+                            {!editPayment && (
+                                <button
+                                    onClick={() => setEditPayment(true)}
+                                    className="p-2 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-colors"
+                                    title="Edit Details"
+                                >
+                                    <Pencil size={20} />
+                                </button>
+                            )}
+                        </div>
+
+                        {editPayment ? (
+                            <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm text-slate-400 mb-1 flex items-center gap-2">
+                                            <Building2 size={14} /> Bank Name
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={formData.bankName}
+                                            onChange={e => setFormData(prev => ({ ...prev, bankName: e.target.value }))}
+                                            className="w-full bg-slate-900 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 focus:outline-none"
+                                            placeholder="e.g. GTBank"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm text-slate-400 mb-1 flex items-center gap-2">
+                                            <Wallet size={14} /> Account Number
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={formData.accountNumber}
+                                            onChange={e => setFormData(prev => ({ ...prev, accountNumber: e.target.value }))}
+                                            className="w-full bg-slate-900 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 focus:outline-none"
+                                            placeholder="0123456789"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm text-slate-400 mb-1 flex items-center gap-2">
+                                        <UserCircle size={14} /> Account Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.accountName}
+                                        onChange={e => setFormData(prev => ({ ...prev, accountName: e.target.value }))}
+                                        className="w-full bg-slate-900 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 focus:outline-none"
+                                        placeholder="Full Name on Account"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm text-slate-400 mb-1 flex items-center gap-2">
+                                        <MapPin size={14} /> Workshop Address
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.workshopAddress}
+                                        onChange={e => setFormData(prev => ({ ...prev, workshopAddress: e.target.value }))}
+                                        className="w-full bg-slate-900 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 focus:outline-none"
+                                        placeholder="Full workshop/studio address"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm text-slate-400 mb-1 flex items-center gap-2">
+                                            <Phone size={14} /> Phone Number
+                                        </label>
+                                        <input
+                                            type="tel"
+                                            value={formData.phoneNumber}
+                                            onChange={e => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                                            className="w-full bg-slate-900 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 focus:outline-none"
+                                            placeholder="+234..."
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm text-slate-400 mb-1">
+                                            NIN <span className="text-red-400">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={formData.identificationUrl}
+                                            onChange={e => setFormData(prev => ({ ...prev, identificationUrl: e.target.value }))}
+                                            className="w-full bg-slate-900 border border-white/10 rounded-lg p-3 text-white focus:border-indigo-500 focus:outline-none"
+                                            placeholder="Enter your National Identity Number"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-4 animate-in fade-in duration-300">
+                                <div className="grid grid-cols-2 gap-6 bg-slate-900/50 p-4 rounded-xl border border-white/5">
+                                    <div>
+                                        <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Bank Name</p>
+                                        <p className="text-white font-medium">{formData.bankName}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Account Number</p>
+                                        <p className="text-white font-mono text-lg">{formData.accountNumber}</p>
+                                    </div>
+                                    <div className="col-span-2 border-t border-white/5 pt-4">
+                                        <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Account Name</p>
+                                        <p className="text-white font-medium text-lg">{formData.accountName}</p>
+                                    </div>
+                                </div>
+
+                                <div className="bg-slate-900/50 p-4 rounded-xl border border-white/5 space-y-4">
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <MapPin size={14} className="text-slate-500" />
+                                            <p className="text-xs text-slate-500 uppercase tracking-wider">Workshop Address</p>
+                                        </div>
+                                        <p className="text-slate-300">{formData.workshopAddress}</p>
+                                    </div>
+
+                                    <div className="border-t border-white/5 pt-4">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Phone size={14} className="text-slate-500" />
+                                            <p className="text-xs text-slate-500 uppercase tracking-wider">Contact Phone</p>
+                                        </div>
+                                        <p className="text-slate-300">{formData.phoneNumber}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <button

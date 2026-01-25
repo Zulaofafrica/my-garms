@@ -33,6 +33,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     useEffect(() => {
+        if (user && (user.status === 'suspended' || user.status === 'disabled')) {
+            router.push('/suspended');
+        }
+    }, [user, router]);
+
+    useEffect(() => {
         refreshUser();
     }, []);
 

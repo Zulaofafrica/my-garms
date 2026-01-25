@@ -39,6 +39,7 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
     // Reply State
     const [replyComment, setReplyComment] = useState("");
     const [isSendingReply, setIsSendingReply] = useState(false);
+    const [paymentDetails, setPaymentDetails] = useState<{ bankName: string; accountNumber: string; accountName: string } | null>(null);
 
     const handleSendReply = async () => {
         if (!order || !replyComment.trim()) return;
@@ -67,6 +68,12 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
                     setError("Order not found");
                 } else {
                     setOrder(foundOrder);
+                }
+                if (foundOrder && (foundOrder.status === 'confirmed' || foundOrder.status === 'sewing' || foundOrder.status === 'shipping')) {
+                    // Fetch payment details if ready for payment
+                    ordersApi.getPaymentDetails(foundOrder.id)
+                        .then(details => setPaymentDetails(details))
+                        .catch(err => console.error("Failed to load payment details", err));
                 }
             } catch (err) {
                 console.error("Order load error:", err);
@@ -439,9 +446,15 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
                                                                 />
                                                                 <div className="bg-slate-900 p-3 rounded text-xs text-muted-foreground my-3">
                                                                     <p className="font-bold text-white mb-1">Bank Details:</p>
-                                                                    <p>Bank: GTBank</p>
-                                                                    <p>Acct: 0123456789</p>
-                                                                    <p>Name: MyGarms Ltd</p>
+                                                                    {paymentDetails ? (
+                                                                        <>
+                                                                            <p>Bank: {paymentDetails.bankName}</p>
+                                                                            <p>Acct: {paymentDetails.accountNumber}</p>
+                                                                            <p>Name: {paymentDetails.accountName}</p>
+                                                                        </>
+                                                                    ) : (
+                                                                        <p className="text-yellow-500">Loading bank details...</p>
+                                                                    )}
                                                                 </div>
                                                                 <GlowButton
                                                                     className="w-full"
@@ -541,6 +554,19 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
                                                 </div>
                                             </div>
                                         )}
+                                    </div>
+                                )}
+
+                                {/* Dispute / Report Issue */}
+                                {(order.status === 'confirmed' || order.status === 'sewing' || order.status === 'shipping' || order.status === 'delivered') && (
+                                    <div className="mt-6 pt-6 border-t border-white/10">
+                                        <button
+                                            onClick={() => router.push(`/dashboard/${order.id}/dispute`)}
+                                            className="w-full flex items-center justify-center gap-2 text-sm text-red-400 hover:text-red-300 transition-colors py-2"
+                                        >
+                                            <AlertCircle className="w-4 h-4" />
+                                            Report an Issue
+                                        </button>
                                     </div>
                                 )}
                             </div>

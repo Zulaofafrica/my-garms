@@ -1,9 +1,19 @@
 
-import { insertOne, generateId, readCollection, query, DbNotification } from './db';
+import { DbNotification, generateId, insertOne } from './db';
+import { EmailService } from './email-service';
 
 export class NotificationService {
 
-    static async send(userId: string, type: DbNotification['type'], message: string): Promise<void> {
+    /**
+     * Create an in-app notification and optionally send an email
+     */
+    static async notify(
+        userId: string,
+        type: 'system' | 'order_update' | 'request_received',
+        message: string,
+        emailOptions?: { to: string, subject: string, htmlBody: string }
+    ) {
+        // 1. Create In-App Notification
         const notification: DbNotification = {
             id: generateId(),
             userId,
@@ -13,24 +23,19 @@ export class NotificationService {
             createdAt: new Date().toISOString()
         };
 
-        await insertOne('notifications', notification); // We need to update insertOne to handle 'notifications'
-    }
+        try {
+            await insertOne('notifications', notification);
+        } catch (e) {
+            console.error('Failed to create in-app notification:', e);
+        }
 
-    static async getUnread(userId: string): Promise<DbNotification[]> {
-        // We'll filter in JS for MVP if no direct query helper exists, but query is better.
-        // Assuming readCollection or custom query.
-        const { rows } = await query('SELECT * FROM notifications WHERE user_id = $1 AND read = FALSE ORDER BY created_at DESC', [userId]);
-        return rows.map(row => ({
-            id: row.id,
-            userId: row.user_id,
-            type: row.type,
-            message: row.message,
-            read: row.read,
-            createdAt: row.created_at.toISOString()
-        }));
-    }
-
-    static async markRead(notificationId: string): Promise<void> {
-        await query('UPDATE notifications SET read = TRUE WHERE id = $1', [notificationId]);
+        // 2. Enqueue Email if requested
+        if (emailOptions) {
+            try {
+                await EmailService.enqueue(emailOptions.to, emailOptions.subject, emailOptions.htmlBody);
+            } catch (e) {
+                console.error('Failed to enqueue email:', e);
+            }
+        }
     }
 }

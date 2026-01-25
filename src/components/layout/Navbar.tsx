@@ -7,6 +7,7 @@ import { Menu, X, ShoppingBag, User as UserIcon, LogOut } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
+import { NotificationBadge } from "@/components/ui/notification-badge"
 
 export function Navbar() {
     const [isOpen, setIsOpen] = React.useState(false)
@@ -65,6 +66,8 @@ export function Navbar() {
                             <span className="sr-only">Cart</span>
                         </Button>
                     )}
+
+                    {user && <NotificationBadge />}
 
                     {!isLoading && (
                         user ? (

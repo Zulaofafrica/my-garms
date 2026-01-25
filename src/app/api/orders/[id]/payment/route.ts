@@ -39,6 +39,27 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
         const updatedOrder = await updateOne<DbOrder>('orders', id, updates);
 
+        // Notify Admin (or Designer)
+        try {
+            const { NotificationService } = await import('@/lib/notification-service');
+            // Assuming Admin has a fixed ID or we notify via generic admin channel. 
+            // For now, let's notify the designer that payment is checking.
+            if (order.assignedDesignerId) {
+                await NotificationService.notify(
+                    order.assignedDesignerId,
+                    'order_update',
+                    `Payment proof uploaded for Order #${order.id.slice(0, 8)}.`,
+                    {
+                        to: 'designer@example.com',
+                        subject: 'Payment Proof Uploaded',
+                        htmlBody: `<p>Customer has uploaded payment proof. Admin will verify shortly.</p>`
+                    }
+                );
+            }
+        } catch (e) {
+            console.error("Notification error:", e);
+        }
+
         return NextResponse.json({
             order: updatedOrder,
             message: 'Payment proof submitted successfully',

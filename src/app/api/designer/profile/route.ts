@@ -47,7 +47,7 @@ export async function PUT(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { specialties, maxCapacity, status } = body;
+        const { specialties, maxCapacity, status, bankName, accountNumber, accountName, workshopAddress, phoneNumber, identificationUrl } = body;
 
         let profile = await findByField<DbDesignerProfile>('designer_profiles', 'userId', user.id);
 
@@ -63,7 +63,13 @@ export async function PUT(request: NextRequest) {
                 rating: 0,
                 status: status || 'available',
                 createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
+                updatedAt: new Date().toISOString(),
+                bankName,
+                accountNumber,
+                accountName,
+                workshopAddress,
+                phoneNumber,
+                identificationUrl
             };
             await insertOne('designer_profiles', profile);
         } else {
@@ -71,11 +77,19 @@ export async function PUT(request: NextRequest) {
             await updateOne<DbDesignerProfile>('designer_profiles', profile.id, {
                 specialties: specialties !== undefined ? specialties : profile.specialties,
                 maxCapacity: maxCapacity !== undefined ? maxCapacity : profile.maxCapacity,
-                status: status !== undefined ? status : profile.status
+                status: status !== undefined ? status : profile.status,
+                bankName: bankName !== undefined ? bankName : profile.bankName,
+                accountNumber: accountNumber !== undefined ? accountNumber : profile.accountNumber,
+                accountName: accountName !== undefined ? accountName : profile.accountName,
+                workshopAddress: workshopAddress !== undefined ? workshopAddress : profile.workshopAddress,
+                phoneNumber: phoneNumber !== undefined ? phoneNumber : profile.phoneNumber,
+                identificationUrl: identificationUrl !== undefined ? identificationUrl : profile.identificationUrl
             });
         }
 
-        return NextResponse.json({ success: true, profile });
+        const updatedProfile = await findByField<DbDesignerProfile>('designer_profiles', 'userId', user.id);
+
+        return NextResponse.json({ success: true, profile: updatedProfile });
     } catch (error) {
         console.error('Update designer profile error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

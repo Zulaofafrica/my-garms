@@ -103,7 +103,16 @@ export class MatchingService {
         // Notify Designers
         // note: In prod, queue this. For MVP, await in parallel.
         await Promise.all(shortlistedIds.map(dId =>
-            NotificationService.send(dId, 'request_received', `New Design Request: ${order.templateName || 'Custom Outfit'} is available for you.`)
+            NotificationService.notify(
+                dId,
+                'request_received',
+                `New Design Request: ${order.templateName || 'Custom Outfit'} is available for you.`,
+                {
+                    to: 'designer@example.com', // In real app, fetch designer email
+                    subject: 'New Design Opportunity on MyGarms',
+                    htmlBody: `<p>A new request matches your profile.</p><a href="https://mygarms.com/designer">View Dashboard</a>`
+                }
+            )
         ));
 
         console.log(`Shortlisted ${shortlisted.length} designers for order ${orderId}`);
@@ -156,14 +165,19 @@ export class MatchingService {
         });
 
         // Notify Customer
-        await NotificationService.send(
+        await NotificationService.notify(
             order.userId,
             'order_update',
-            `Great news! Your order is now being designed by a specialist.`
+            `Great news! Your order is now being designed by a specialist.`,
+            {
+                to: 'customer@example.com', // Fetch user email in real app
+                subject: 'Designer Assigned to Your Order',
+                htmlBody: `<p>Your order #${order.id.slice(0, 8)} has been assigned.</p>`
+            }
         );
 
         // Notify Designer (Confirmation)
-        await NotificationService.send(
+        await NotificationService.notify(
             designerUserId,
             'system',
             `You have been assigned to Order #${order.id.slice(0, 8)}. Please review details.`

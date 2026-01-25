@@ -153,6 +153,10 @@ export const ordersApi = {
             body: JSON.stringify({ action: 'reply', ...data }),
         });
     },
+
+    getPaymentDetails: async (orderId: string) => {
+        return fetchApi<{ bankName: string; accountNumber: string; accountName: string }>(`/orders/${orderId}/payment-details`);
+    },
 };
 
 // Designer API
@@ -221,11 +225,73 @@ export const designerApi = {
         specialties?: string[];
         maxCapacity?: number;
         status?: 'available' | 'busy' | 'offline';
+        bankName?: string;
+        accountNumber?: string;
+        accountName?: string;
+        workshopAddress?: string;
+        phoneNumber?: string;
+        identificationUrl?: string;
     }) => {
         return fetchApi<{ success: true; profile: any }>('/designer/profile', {
             method: 'PUT',
             body: JSON.stringify(data),
         });
+    },
+
+    payCommission: async (orderIds: string[]) => {
+        return fetchApi<{ success: true; message: string }>('/designer/commission/pay', {
+            method: 'POST',
+            body: JSON.stringify({ orderIds }),
+        });
+    },
+};
+
+// Admin API
+export const adminApi = {
+    getUsers: async () => {
+        return fetchApi<{ users: User[] }>('/admin/users');
+    },
+
+    updateUserRole: async (userId: string, role: 'customer' | 'designer' | 'admin') => {
+        return fetchApi<{ user: User; message: string }>(`/admin/users/${userId}/role`, {
+            method: 'PUT',
+            body: JSON.stringify({ role })
+        });
+    },
+
+    updateUserStatus: async (userId: string, data: { status?: string; isVerified?: boolean }) => {
+        return fetchApi<{ user: User; success: true }>(`/admin/users/${userId}/status`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    },
+
+    deleteUser: async (userId: string) => {
+        return fetchApi<{ success: true; message: string }>(`/admin/users/${userId}`, {
+            method: 'DELETE'
+        });
+    },
+
+    getOrders: async () => {
+        return fetchApi<{ orders: Order[] }>('/admin/orders');
+    },
+
+    assignDesigner: async (orderId: string, designerId: string) => {
+        return fetchApi<{ success: true; message: string }>(`/admin/orders/${orderId}/assign`, {
+            method: 'PUT',
+            body: JSON.stringify({ designerId })
+        });
+    },
+
+    resolveDispute: async (orderId: string, resolution: string) => {
+        return fetchApi<{ success: true; message: string }>(`/admin/orders/${orderId}/dispute`, {
+            method: 'PUT',
+            body: JSON.stringify({ resolution })
+        });
+    },
+
+    getAuditLogs: async () => {
+        return fetchApi<{ logs: any[] }>('/admin/logs');
     },
 };
 
@@ -235,7 +301,9 @@ export interface User {
     email: string;
     firstName: string;
     lastName: string;
-    role: 'customer' | 'designer';
+    role: 'customer' | 'designer' | 'admin';
+    status?: 'active' | 'suspended' | 'disabled';
+    isVerified?: boolean;
     createdAt: string;
 }
 
@@ -267,8 +335,18 @@ export interface Order {
     templateName: string;
     fabricId: string;
     fabricName: string;
-    status: 'pending' | 'reviewing' | 'changes_requested' | 'confirmed' | 'sewing' | 'shipping' | 'delivered';
+    status: 'pending' | 'reviewing' | 'changes_requested' | 'confirmed' | 'sewing' | 'shipping' | 'delivered' | 'cancelled';
     assignedDesignerId?: string;
+
+    // Assignment fields
+    assignmentStatus?: 'open' | 'shortlisted' | 'assigned' | 'completed';
+    shortlistedDesignerIds?: string[];
+    assignmentExpiresAt?: string;
+
+    // Dispute Management
+    disputeStatus?: 'none' | 'opened' | 'resolved';
+    disputeReason?: string;
+    disputeResolution?: string;
     feedbackLog: FeedbackLogEntry[];
     total: number;
     price: number | null;
@@ -308,4 +386,5 @@ export interface Order {
     productionEndDate?: string;
     createdAt: string;
     updatedAt: string;
+    commissionPaid?: boolean;
 }

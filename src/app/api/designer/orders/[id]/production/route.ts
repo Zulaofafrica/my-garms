@@ -50,6 +50,30 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
         const updatedOrder = await updateOne<DbOrder>('orders', id, updates);
 
+        // Notify Customer
+        try {
+            const { NotificationService } = await import('@/lib/notification-service');
+            const stageLabels: Record<string, string> = {
+                'sewing': 'Sewing in progress',
+                'finishing': 'Finishing touches',
+                'ready_for_delivery': 'Ready for delivery',
+                'in_transit': 'Out for delivery',
+                'delivered': 'Delivered'
+            };
+            const label = stageLabels[stage] || stage;
+
+            await NotificationService.notify(
+                order.userId,
+                'order_update',
+                `Update on Order #${order.id.slice(0, 8)}: ${label}`,
+                {
+                    to: 'customer@example.com',
+                    subject: `Order Update: ${label}`,
+                    htmlBody: `<p>Your order is now: <strong>${label}</strong></p>`
+                }
+            );
+        } catch (e) { console.error("Notify error", e); }
+
         return NextResponse.json({
             order: updatedOrder,
             message: 'Production stage updated',
