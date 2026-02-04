@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Set session cookie
-        await setSession(user.id);
+        await setSession(user.id, user.role);
 
         // Return user without password
         const { passwordHash, ...userWithoutPassword } = user;

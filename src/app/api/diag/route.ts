@@ -1,143 +1,79 @@
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { readCollection, updateOne, DbOrder } from '@/lib/db';
 import { MatchingService } from '@/lib/matching-service';
-import { insertOne, deleteOne, DbDesignerProfile, DbOrder, DbUser } from '@/lib/db';
-import { randomUUID } from 'crypto';
+import { findById } from '@/lib/db';
 
-export async function GET() {
-    let createdIds: { context: string, id: string }[] = [];
-    let debug: string[] = [];
-
+export async function GET(request: NextRequest) {
     try {
-        const testId = Date.now().toString();
-        debug.push('Starting matching verification...');
+        const url = new URL(request.url);
+        const debugOrderId = url.searchParams.get('debugMatchOrderId');
 
-        // 1. Create Users
-        const designerUserId = randomUUID();
-        const customerUserId = randomUUID();
+        if (debugOrderId) {
+            const logs: string[] = [];
+            // Hijack console.log to capture service logs
+            const originalLog = console.log;
+            const originalWarn = console.warn;
+            console.log = (msg: any) => logs.push(`LOG: ${msg}`);
+            console.warn = (msg: any) => logs.push(`WARN: ${msg}`);
 
-        const designerUser: DbUser = {
-            id: designerUserId,
-            email: `d_${testId}@test.com`,
-            passwordHash: 'hash',
-            firstName: 'Test',
-            lastName: 'Designer',
-            role: 'designer',
-            createdAt: new Date().toISOString()
-        };
-        await insertOne('users', designerUser);
-        createdIds.push({ context: 'users', id: designerUserId });
-        debug.push('Designer user created');
-
-        const customerUser: DbUser = {
-            id: customerUserId,
-            email: `c_${testId}@test.com`,
-            passwordHash: 'hash',
-            firstName: 'Test',
-            lastName: 'Customer',
-            role: 'customer',
-            createdAt: new Date().toISOString()
-        };
-        await insertOne('users', customerUser);
-        createdIds.push({ context: 'users', id: customerUserId });
-        debug.push('Customer user created');
-
-        // 2. Create Test Designer Profile
-        const designerProfileId = randomUUID();
-        const designer: DbDesignerProfile = {
-            id: designerProfileId,
-            userId: designerUserId,
-            specialties: ['dress', 'formal'], // Knows Dress and Formal
-            skillLevel: 'basic',
-            maxCapacity: 5,
-            currentLoad: 0,
-            rating: 5,
-            status: 'available',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
-        await insertOne('designer_profiles', designer);
-        createdIds.push({ context: 'designer_profiles', id: designerProfileId });
-        debug.push(`Designer profile created (Specialties: ${designer.specialties.join(', ')})`);
-
-        // 3. Create Test Order (Exact Match: Dress + Formal)
-        const orderMatchId = randomUUID();
-        const orderMatch: DbOrder = {
-            id: orderMatchId,
-            userId: customerUserId,
-            profileId: 'p1',
-            templateId: 't1',
-            templateName: 'Custom',
-            fabricId: 'f1',
-            fabricName: 'silk',
-            category: 'dress', // Matches 'dress'
-            style: 'formal',   // Matches 'formal'
-            status: 'pending',
-            total: 100,
-            price: null,
-            images: [],
-            feedbackLog: [],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
-        await insertOne('orders', orderMatch);
-        createdIds.push({ context: 'orders', id: orderMatchId });
-        debug.push(`Match Order created (Category: ${orderMatch.category})`);
-
-        // 4. Create Test Order (No Match Category: Suit)
-        const orderNoMatchId = randomUUID();
-        const orderNoMatch: DbOrder = {
-            ...orderMatch,
-            id: orderNoMatchId,
-            category: 'suit' // Designer doesn't have 'suit'
-        };
-        await insertOne('orders', orderNoMatch);
-        createdIds.push({ context: 'orders', id: orderNoMatchId });
-        debug.push(`No-Match Order created (Category: ${orderNoMatch.category})`);
-
-        // 5. Run Matching
-        debug.push('Running matching for Match Order...');
-        const matches1 = await MatchingService.findEligibleDesigners(orderMatch);
-        debug.push(`Matches found: ${matches1.length}`);
-
-        debug.push('Running matching for No-Match Order...');
-        const matches2 = await MatchingService.findEligibleDesigners(orderNoMatch);
-        debug.push(`Matches found: ${matches2.length}`);
-
-        const isSuccess1 = matches1.some(d => d.id === designerProfileId);
-        const isSuccess2 = !matches2.some(d => d.id === designerProfileId);
-
-        return NextResponse.json({
-            success: isSuccess1 && isSuccess2,
-            debug,
-            results: {
-                matchTest: {
-                    expected: true,
-                    found: isSuccess1,
-                    matches: matches1.map(d => d.id)
-                },
-                noMatchTest: {
-                    expected: false,
-                    found: isSuccess2 === false, // if found in matches2, then found=true, success=false
-                    designerInList: matches2.some(d => d.id === designerProfileId)
-                }
-            }
-        });
-
-    } catch (error: any) {
-        return NextResponse.json({
-            error: error.message || String(error),
-            debug,
-            createdIds
-        }, { status: 200 });
-    } finally {
-        // Cleanup in reverse order
-        for (const item of createdIds.reverse()) {
             try {
-                await deleteOne(item.context, item.id);
-            } catch (e) {
-                console.error(`Cleanup failed for ${item.context} ${item.id}`, e);
+                const order = await findById<DbOrder>('orders', debugOrderId);
+                if (!order) return NextResponse.json({ error: 'Order not found' });
+
+                logs.push(`Debug Match for Order ${order.id} at ${new Date().toISOString()}`);
+
+                const eligible = await MatchingService.findEligibleDesigners(order);
+
+                return NextResponse.json({ logs, eligible });
+            } finally {
+                console.log = originalLog;
+                console.warn = originalWarn;
             }
         }
+
+        const orders = await readCollection('orders');
+        const designers = await readCollection('designer_profiles');
+
+        const recentOrders = orders
+            .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, 5)
+            .map((o: any) => ({
+                id: o.id,
+                templateName: o.templateName,
+                category: o.category,
+                style: o.style,
+                status: o.status,
+                priority: o.urgency,
+                assignmentStatus: o.assignmentStatus,
+                shortlisted: o.shortlistedDesignerIds
+            }));
+
+        const designerList = designers.map((d: any) => ({
+            id: d.id,
+            userId: d.userId,
+            name: d.name, // Note: name is on user/profile, not designer profile usually, but verifying structure
+            specialties: d.specialties,
+            status: d.status,
+            load: `${d.currentLoad}/${d.maxCapacity}`,
+            rating: d.rating,
+            skillLevel: d.skillLevel
+        }));
+
+        return NextResponse.json({ recentOrders, designerList });
+    } catch (e: any) {
+        return NextResponse.json({ error: e.message });
+    }
+}
+
+export async function POST(req: NextRequest) {
+    try {
+        const { orderId, assignmentStatus } = await req.json();
+        await updateOne<DbOrder>('orders', orderId, {
+            assignmentStatus
+        });
+        return NextResponse.json({ success: true });
+    } catch (e: any) {
+        return NextResponse.json({ error: e.message });
     }
 }

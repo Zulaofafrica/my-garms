@@ -5,12 +5,16 @@ import { useEffect, useState } from 'react';
 import { adminApi, User } from '@/lib/api-client';
 import { Search, Shield, User as UserIcon, Scissors, MoreVertical, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { useToast } from '@/components/ui/toast';
+import { useConfirm } from '@/components/ui/confirm-modal';
 
 export default function UserManagementPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+    const toast = useToast();
+    const { confirm } = useConfirm();
 
     useEffect(() => {
         loadUsers();
@@ -28,7 +32,14 @@ export default function UserManagementPage() {
     };
 
     const handleRoleUpdate = async (userId: string, newRole: 'customer' | 'designer' | 'admin') => {
-        if (!confirm(`Are you sure you want to change this user's role to ${newRole}?`)) return;
+        const confirmed = await confirm({
+            title: "Change User Role",
+            message: `Are you sure you want to change this user's role to ${newRole}?`,
+            type: "warning",
+            confirmText: "Change Role",
+            cancelText: "Cancel"
+        });
+        if (!confirmed) return;
 
         setUpdatingUserId(userId);
         try {
@@ -36,19 +47,27 @@ export default function UserManagementPage() {
             // Optimistic update
             setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
         } catch (err) {
-            alert('Failed to update role');
+            toast.error('Failed to update role');
         } finally {
             setUpdatingUserId(null);
         }
     };
 
     const handleStatusUpdate = async (userId: string, newStatus: string) => {
-        if (!confirm(`Change user status to ${newStatus}?`)) return;
+        const confirmed = await confirm({
+            title: "Change User Status",
+            message: `Change user status to ${newStatus}?`,
+            type: newStatus === 'suspended' ? 'danger' : 'info',
+            confirmText: newStatus === 'suspended' ? 'Suspend' : 'Activate',
+            cancelText: "Cancel"
+        });
+        if (!confirmed) return;
+
         try {
             await adminApi.updateUserStatus(userId, { status: newStatus });
             setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus as any } : u));
         } catch (err) {
-            alert('Failed to update status');
+            toast.error('Failed to update status');
         }
     };
 
@@ -57,17 +76,25 @@ export default function UserManagementPage() {
             await adminApi.updateUserStatus(userId, { isVerified: !currentVal });
             setUsers(prev => prev.map(u => u.id === userId ? { ...u, isVerified: !currentVal } : u));
         } catch (err) {
-            alert('Failed to update verification');
+            toast.error('Failed to update verification');
         }
     };
 
     const handleDelete = async (userId: string) => {
-        if (!confirm('Are you sure? This cannot be undone.')) return;
+        const confirmed = await confirm({
+            title: "Delete User",
+            message: "Are you sure? This cannot be undone.",
+            type: "danger",
+            confirmText: "Delete",
+            cancelText: "Cancel"
+        });
+        if (!confirmed) return;
+
         try {
             await adminApi.deleteUser(userId);
             setUsers(prev => prev.filter(u => u.id !== userId));
         } catch (err) {
-            alert('Failed to delete user');
+            toast.error('Failed to delete user');
         }
     };
 
@@ -90,14 +117,14 @@ export default function UserManagementPage() {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                 <h1 className="text-2xl font-bold text-slate-800">User Management</h1>
-                <div className="relative">
+                <div className="relative w-full md:w-auto">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                     <input
                         type="text"
                         placeholder="Search users..."
-                        className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
+                        className="w-full md:w-64 pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />

@@ -52,13 +52,15 @@ export async function POST(request: NextRequest) {
             firstName,
             lastName,
             role: body.role === 'designer' ? 'designer' : 'customer',
+            status: 'active',
+            isVerified: false,
             createdAt: new Date().toISOString(),
         };
 
         await insertOne('users', newUser);
 
         // Set session cookie
-        await setSession(newUser.id);
+        await setSession(newUser.id, newUser.role);
 
         // Return user without password
         const { passwordHash: _, ...userWithoutPassword } = newUser;

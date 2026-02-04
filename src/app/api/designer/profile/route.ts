@@ -47,7 +47,7 @@ export async function PUT(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { specialties, maxCapacity, status, bankName, accountNumber, accountName, workshopAddress, phoneNumber, identificationUrl } = body;
+        const { specialties, maxCapacity, status, bankName, accountNumber, accountName, workshopAddress, phoneNumber, identificationUrl, profilePhoto, portfolioSamples } = body;
 
         let profile = await findByField<DbDesignerProfile>('designer_profiles', 'userId', user.id);
 
@@ -69,7 +69,9 @@ export async function PUT(request: NextRequest) {
                 accountName,
                 workshopAddress,
                 phoneNumber,
-                identificationUrl
+                identificationUrl,
+                profilePhoto,
+                portfolioSamples: portfolioSamples || []
             };
             await insertOne('designer_profiles', profile);
         } else {
@@ -83,7 +85,9 @@ export async function PUT(request: NextRequest) {
                 accountName: accountName !== undefined ? accountName : profile.accountName,
                 workshopAddress: workshopAddress !== undefined ? workshopAddress : profile.workshopAddress,
                 phoneNumber: phoneNumber !== undefined ? phoneNumber : profile.phoneNumber,
-                identificationUrl: identificationUrl !== undefined ? identificationUrl : profile.identificationUrl
+                identificationUrl: identificationUrl !== undefined ? identificationUrl : profile.identificationUrl,
+                profilePhoto: profilePhoto !== undefined ? profilePhoto : profile.profilePhoto,
+                portfolioSamples: portfolioSamples !== undefined ? portfolioSamples : profile.portfolioSamples
             });
         }
 

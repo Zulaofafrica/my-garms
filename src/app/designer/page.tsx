@@ -12,16 +12,17 @@ import {
     Search,
     Briefcase,
     Wallet,
-    DollarSign,
     ArrowRight,
     X,
     CreditCard,
-    AlertTriangle
+    AlertTriangle,
+    Star
 } from "lucide-react";
 import { designerApi, authApi, Order, User } from "@/lib/api-client";
 import styles from "./designer.module.css";
 import Link from "next/link";
 import { SimpleImageUpload } from "@/components/ui/simple-image-upload";
+import { useToast } from "@/components/ui/toast";
 
 function DisputesList() {
     const [disputes, setDisputes] = useState<any[]>([]);
@@ -37,14 +38,14 @@ function DisputesList() {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
             {disputes.map((dispute: any) => (
-                <Link key={dispute.id} href={`/designer/disputes/${dispute.id}`} className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 hover:bg-red-500/20 transition-all">
+                <Link key={dispute.id} href={`/designer/disputes/${dispute.id}`} className="bg-red-50 border border-red-200 rounded-xl p-4 hover:bg-red-100 transition-all">
                     <div className="flex justify-between items-start mb-2">
-                        <span className="text-xs font-bold text-red-400 bg-red-400/10 px-2 py-1 rounded uppercase">{dispute.status}</span>
-                        <span className="text-xs text-slate-400">{new Date(dispute.createdAt).toLocaleDateString()}</span>
+                        <span className="text-xs font-bold text-red-600 bg-red-100 px-2 py-1 rounded uppercase">{dispute.status}</span>
+                        <span className="text-xs text-slate-500">{new Date(dispute.createdAt).toLocaleDateString()}</span>
                     </div>
-                    <h4 className="text-white font-bold mb-1">{dispute.category}</h4>
-                    <p className="text-sm text-slate-300 line-clamp-2 mb-2">{dispute.description}</p>
-                    <div className="flex items-center gap-2 text-xs text-slate-500 mt-2 pt-2 border-t border-white/5">
+                    <h4 className="text-gray-900 font-bold mb-1">{dispute.category}</h4>
+                    <p className="text-sm text-slate-600 line-clamp-2 mb-2">{dispute.description}</p>
+                    <div className="flex items-center gap-2 text-xs text-slate-500 mt-2 pt-2 border-t border-red-200">
                         <AlertCircle size={14} /> Only {dispute.orderId.slice(0, 8)}...
                     </div>
                 </Link>
@@ -55,11 +56,15 @@ function DisputesList() {
 
 export default function DesignerDashboard() {
     const router = useRouter();
+    const toast = useToast();
     const [user, setUser] = useState<User | null>(null);
     const [orders, setOrders] = useState<Order[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [isPaying, setIsPaying] = useState(false);
+
+    const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+    const [designerProfile, setDesignerProfile] = useState<any>(null);
 
     // Finance State
     const [financeStats, setFinanceStats] = useState({ accrued: 0, paid: 0, pending: 0, balance: 0 });
@@ -71,6 +76,18 @@ export default function DesignerDashboard() {
         notes: ''
     });
 
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        if (showPaymentModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [showPaymentModal]);
+
     useEffect(() => {
         const loadDashboard = async () => {
             try {
@@ -81,6 +98,19 @@ export default function DesignerDashboard() {
                     return;
                 }
                 setUser(me.user);
+
+                // Load Profile Data (Photo)
+                try {
+                    const settings = await designerApi.getSettings();
+                    if (settings.profile) {
+                        setDesignerProfile(settings.profile);
+                        if (settings.profile.profilePhoto) {
+                            setProfilePhoto(settings.profile.profilePhoto);
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to load profile photo", e);
+                }
 
                 // Load orders
                 const data = await designerApi.listOrders();
@@ -138,11 +168,11 @@ export default function DesignerDashboard() {
     const handleSubmitPayment = async () => {
         const amount = Number(paymentForm.amount);
         if (!amount || amount <= 0) {
-            alert("Please enter a valid amount");
+            toast.warning("Please enter a valid amount");
             return;
         }
         if (!paymentForm.proofUrl) {
-            alert("Please upload proof of payment");
+            toast.warning("Please upload proof of payment");
             return;
         }
 
@@ -161,7 +191,7 @@ export default function DesignerDashboard() {
 
             if (!res.ok) throw new Error(data.error || 'Payment failed');
 
-            alert("Payment submitted successfully! Waiting for admin approval.");
+            toast.success("Payment submitted successfully! Waiting for admin approval.");
             setShowPaymentModal(false);
 
             // Refresh stats
@@ -171,7 +201,7 @@ export default function DesignerDashboard() {
             }
         } catch (err) {
             console.error("Payment error", err);
-            alert("Failed to submit payment.");
+            toast.error("Failed to submit payment.");
         } finally {
             setIsPaying(false);
         }
@@ -193,12 +223,28 @@ export default function DesignerDashboard() {
                     <p className={styles.subtitle}>Manage and review custom design requests.</p>
                 </div>
                 <div className="flex items-center gap-4">
-                    <Link href="/designer/settings" className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-slate-300 hover:text-white transition-colors" title="Settings">
+                    <Link href="/designer/settings" className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-slate-600 hover:text-gray-900 transition-colors" title="Settings">
                         <Briefcase size={20} />
                     </Link>
-                    <div className={styles.userBadge}>
-                        <span className={styles.userName}>{user?.firstName} {user?.lastName}</span>
-                        <span className={styles.userRole}>Master Designer</span>
+                    <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
+                        {profilePhoto ? (
+                            <img src={profilePhoto} alt="Profile" className="w-12 h-12 rounded-full object-cover ring-2 ring-indigo-500/50" />
+                        ) : (
+                            <div className="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center ring-2 ring-indigo-500/50">
+                                <span className="text-lg font-bold text-indigo-600">{user?.firstName?.[0]}</span>
+                            </div>
+                        )}
+                        <div className="flex flex-col">
+                            <span className="text-gray-900 font-bold leading-tight">{user?.firstName} {user?.lastName}</span>
+                            <span className="text-xs text-slate-500 font-medium">Master Designer</span>
+                            {designerProfile && (
+                                <div className="flex items-center gap-1 mt-0.5">
+                                    <Star className="w-3 h-3 text-amber-500 fill-current" />
+                                    <span className="text-xs font-bold text-gray-900">{Number(designerProfile.rating || 0).toFixed(1)}</span>
+                                    <span className="text-[10px] text-slate-500">({designerProfile.reviewCount || 0})</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </header>
@@ -223,7 +269,7 @@ export default function DesignerDashboard() {
                     <div className="flex items-start justify-between mb-4">
                         <div>
                             <h3 className="text-emerald-400 font-bold flex items-center gap-2">
-                                <DollarSign size={20} /> Total Revenue
+                                <span className="font-sans text-xl">₦</span> Total Revenue
                             </h3>
                             <p className="text-emerald-200/60 text-sm">Total value of active/completed orders</p>
                         </div>
@@ -342,8 +388,8 @@ export default function DesignerDashboard() {
             </section>
             {/* Payment Modal */}
             {showPaymentModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-2xl p-6 shadow-2xl scale-in-95 animate-in duration-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+                    <div className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-2xl p-6 shadow-2xl scale-in-95 animate-in duration-200 max-h-[90vh] overflow-y-auto my-auto">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-xl font-bold text-white flex items-center gap-2">
                                 <CreditCard className="text-orange-500" /> Pay Commission

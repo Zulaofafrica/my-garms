@@ -41,10 +41,10 @@ async function run() {
             [designerId, `des_${suffix}@test.com`, 'hash', 'Test', 'Designer', 'designer', new Date().toISOString()]
         );
         const profileId = `dp_${suffix}`;
-        await pool.query(`INSERT INTO designer_profiles (id, user_id, specialties, skill_level, max_capacity, current_load, rating, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-            [profileId, designerId, JSON.stringify(['suit']), 'premium', 5, 0, 5.0, 'available', new Date().toISOString(), new Date().toISOString()]
+        await pool.query(`INSERT INTO designer_profiles (id, user_id, specialties, skill_level, max_capacity, current_load, rating, status, profile_photo, portfolio_samples, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+            [profileId, designerId, JSON.stringify(['suit']), 'premium', 5, 0, 5.0, 'available', 'http://test.com/photo.jpg', JSON.stringify(['http://test.com/p1.jpg']), new Date().toISOString(), new Date().toISOString()]
         );
-        console.log("1. Created Designer (Specialty: Suit)");
+        console.log("1. Created Designer with Profile Photo & Portfolio");
 
         // 2. Create Order (Trigger Matching manually or via API simulation)
         // Since we can't easily import MatchingService here (TS), we will assume the API works (tested before)

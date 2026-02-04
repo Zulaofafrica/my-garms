@@ -3,7 +3,7 @@ import { Outfit } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { AuthProvider } from "@/lib/auth-context";
+import { Providers } from "@/components/providers";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -24,14 +24,15 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${outfit.variable} font-sans antialiased min-h-screen flex flex-col`}
+        suppressHydrationWarning
       >
-        <AuthProvider>
+        <Providers>
           <Navbar />
-          <main className="flex-1">
+          <main className="flex-1 overflow-visible">
             {children}
           </main>
           <Footer />
-        </AuthProvider>
+        </Providers>
       </body>
     </html>
   );

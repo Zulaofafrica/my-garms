@@ -24,7 +24,7 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await updateOne('notifications', id, { read: true });
+    await updateOne<DbNotification>('notifications', id, { read: true });
 
     return NextResponse.json({ success: true });
 }

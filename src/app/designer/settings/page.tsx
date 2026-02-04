@@ -7,8 +7,13 @@ import { designerApi } from "@/lib/api-client";
 import { ArrowLeft, Save, Briefcase, Power, Layers, Wallet, MapPin, Phone, Building2, UserCircle, Pencil, X } from "lucide-react";
 import { CATEGORIES, STYLES } from "@/components/design-flow/CategoryStyleForm";
 
+import { SimpleImageUpload } from "@/components/ui/simple-image-upload";
+import { MultiImageUpload } from "@/components/ui/multi-image-upload";
+import { useToast } from "@/components/ui/toast";
+
 export default function DesignerSettingsPage() {
     const router = useRouter();
+    const toast = useToast();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [editPayment, setEditPayment] = useState(true);
@@ -23,7 +28,9 @@ export default function DesignerSettingsPage() {
         accountName: '',
         workshopAddress: '',
         phoneNumber: '',
-        identificationUrl: ''
+        identificationUrl: '',
+        profilePhoto: '',
+        portfolioSamples: [] as string[]
     });
 
     const [newSpecialty, setNewSpecialty] = useState("");
@@ -49,7 +56,9 @@ export default function DesignerSettingsPage() {
                     accountName: data.profile.accountName || '',
                     workshopAddress: data.profile.workshopAddress || '',
                     phoneNumber: data.profile.phoneNumber || '',
-                    identificationUrl: data.profile.identificationUrl || ''
+                    identificationUrl: data.profile.identificationUrl || '',
+                    profilePhoto: data.profile.profilePhoto || '',
+                    portfolioSamples: data.profile.portfolioSamples || []
                 });
             }
         } catch (error) {
@@ -61,7 +70,7 @@ export default function DesignerSettingsPage() {
 
     const handleSave = async () => {
         if (!formData.bankName || !formData.accountNumber || !formData.identificationUrl) {
-            alert("Please fill in all mandatory fields (Bank, Account, NIN).");
+            toast.warning("Please fill in all mandatory fields (Bank, Account, NIN).");
             return;
         }
         setSaving(true);
@@ -75,12 +84,14 @@ export default function DesignerSettingsPage() {
                 accountName: formData.accountName,
                 workshopAddress: formData.workshopAddress,
                 phoneNumber: formData.phoneNumber,
-                identificationUrl: formData.identificationUrl
+                identificationUrl: formData.identificationUrl,
+                profilePhoto: formData.profilePhoto,
+                portfolioSamples: formData.portfolioSamples
             });
-            alert("Settings saved successfully!");
+            toast.success("Settings saved successfully!");
             setEditPayment(false);
         } catch (error) {
-            alert("Failed to save settings");
+            toast.error("Failed to save settings");
         } finally {
             setSaving(false);
         }
@@ -111,7 +122,42 @@ export default function DesignerSettingsPage() {
                 </div>
 
                 <div className="space-y-6">
-                    {/* Status Card */}
+                    {/* Profile & Portfolio Card */}
+                    <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+                        <div className="flex items-start gap-4 mb-6">
+                            <div className="p-3 bg-blue-500/20 rounded-lg text-blue-300">
+                                <UserCircle size={24} />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-bold text-white">Public Profile</h2>
+                                <p className="text-slate-400 text-sm">How you appear to customers.</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="max-w-xs mx-auto md:mx-0">
+                                <SimpleImageUpload
+                                    label="Profile Photo"
+                                    value={formData.profilePhoto}
+                                    onUpload={(url) => setFormData(prev => ({ ...prev, profilePhoto: url }))}
+                                />
+                            </div>
+
+                            <div className="border-t border-white/5 pt-6">
+                                <MultiImageUpload
+                                    label="Portfolio Gallery"
+                                    values={formData.portfolioSamples}
+                                    onUpload={(urls) => setFormData(prev => ({ ...prev, portfolioSamples: urls }))}
+                                    maxFiles={10}
+                                />
+                                <p className="text-xs text-slate-500 mt-2">Showcase your best work (Max 10 images).</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Status Card and others... */}
+                    {/* ... Rest of existing JSX ... */}
+
                     <div className="bg-white/5 border border-white/10 rounded-xl p-6">
                         <div className="flex items-start gap-4 mb-6">
                             <div className="p-3 bg-indigo-500/20 rounded-lg text-indigo-300">

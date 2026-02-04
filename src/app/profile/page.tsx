@@ -21,9 +21,11 @@ import {
 } from "@/lib/types";
 import { profilesApi, ordersApi, authApi, Profile as ApiProfile, Order as ApiOrder } from "@/lib/api-client";
 import { motion, AnimatePresence } from "framer-motion";
+import { useToast } from "@/components/ui/toast";
 
 export default function ProfilePage() {
     const router = useRouter();
+    const toast = useToast();
     const [view, setView] = useState<"measurements" | "orders">("measurements");
     const [profiles, setProfiles] = useState<ApiProfile[]>([]);
     const [orders, setOrders] = useState<ApiOrder[]>([]);
@@ -57,11 +59,19 @@ export default function ProfilePage() {
                 if (profilesData.profiles.length > 0) {
                     setActiveProfileId(profilesData.profiles[0].id);
                 }
-            } catch (err) {
-                console.error("Failed to load initial data:", err);
-                router.push("/auth/login");
-            } finally {
+
                 setIsLoading(false);
+            } catch (err: any) {
+                // If 401/Not authenticated, redirect to login
+                if (err.message === 'Not authenticated' || err.message?.includes('Unauthorized')) {
+                    router.push("/auth/login");
+                } else {
+                    console.error("Failed to load initial data:", err);
+                    router.push("/auth/login"); // Fallback redirect
+                }
+            } finally {
+                // Only stop loading if we aren't redirecting (though redirect will unmount this anyway)
+                // If we redirected, we can leave loading true to prevent flash of content
             }
         };
 
@@ -84,7 +94,7 @@ export default function ProfilePage() {
             setActiveProfileId(data.profile.id);
             setIsModalOpen(false);
         } catch (err) {
-            alert(err instanceof Error ? err.message : "Failed to create profile");
+            toast.error(err instanceof Error ? err.message : "Failed to create profile");
         }
     };
 
@@ -99,7 +109,7 @@ export default function ProfilePage() {
                 return updated;
             });
         } catch (err) {
-            alert(err instanceof Error ? err.message : "Failed to delete profile");
+            toast.error(err instanceof Error ? err.message : "Failed to delete profile");
         }
     };
 
@@ -134,7 +144,7 @@ export default function ProfilePage() {
                 prev.map((p) => p.id === activeProfileId ? data.profile : p)
             );
         } catch (err) {
-            alert(err instanceof Error ? err.message : "Failed to change gender");
+            toast.error(err instanceof Error ? err.message : "Failed to change gender");
         }
     };
 
@@ -151,7 +161,7 @@ export default function ProfilePage() {
             setSaveStatus("saved");
             setTimeout(() => setSaveStatus("idle"), 2000);
         } catch (err) {
-            alert(err instanceof Error ? err.message : "Failed to save measurements");
+            toast.error(err instanceof Error ? err.message : "Failed to save measurements");
             setSaveStatus("idle");
         }
     };

@@ -39,10 +39,11 @@ export async function GET(request: NextRequest) {
 
         designerOrders.forEach(o => {
             if (billableStatuses.includes(o.status) && o.price) {
-                // 15% of (Price - Delivery)
+                // 15% standard, 20% for curated designs (templateId present)
                 const deliveryFee = 5000;
                 const commissionable = Math.max(0, o.price - deliveryFee);
-                accrued += (commissionable * 0.15);
+                const rate = o.templateId ? 0.20 : 0.15;
+                accrued += (commissionable * rate);
             }
         });
 

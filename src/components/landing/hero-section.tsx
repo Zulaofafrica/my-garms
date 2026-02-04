@@ -26,7 +26,7 @@ export function HeroSection() {
                         <div className="inline-flex items-center rounded-full border bg-background/50 backdrop-blur-sm px-4 py-1.5 text-sm font-medium shadow-sm">
                             <Sparkles className="mr-2 h-4 w-4 text-accent" />
                             <span className="bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                                Premium Quality Custom Wear
+                                The Future of Custom Fashion
                             </span>
                         </div>
                     </motion.div>
@@ -38,8 +38,8 @@ export function HeroSection() {
                         transition={{ duration: 0.5, delay: 0.1 }}
                         className="font-heading text-4xl font-extrabold tracking-tight sm:text-6xl md:text-7xl lg:text-8xl"
                     >
-                        Design Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-purple-400">Unique Look</span> <br className="hidden md:block" />
-                        with MyGarms.
+                        Your Style. Your Way. <br className="hidden md:block" />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-purple-400">Expertly Crafted.</span>
                     </motion.h1>
 
                     {/* Description */}
@@ -49,8 +49,8 @@ export function HeroSection() {
                         transition={{ duration: 0.5, delay: 0.2 }}
                         className="mx-auto max-w-[42rem] leading-normal text-muted-foreground sm:text-xl sm:leading-8"
                     >
-                        Create custom outfits that match your style. From streetwear to formal,
-                        we bring your vision to life with premium materials and craftsmanship.
+                        Choose from our curated collections or bring your own unique vision.
+                        We match you with top designers to bring your perfect outfit to life.
                     </motion.p>
 
                     {/* Buttons */}
@@ -60,14 +60,14 @@ export function HeroSection() {
                         transition={{ duration: 0.5, delay: 0.3 }}
                         className="flex flex-col sm:flex-row items-center justify-center gap-4"
                     >
-                        <Link href="/design">
+                        <Link href="/gallery">
                             <GlowButton size="lg" className="w-full sm:w-auto gap-2">
-                                Start Designing <ArrowRight className="h-4 w-4" />
+                                Browse Collections <ArrowRight className="h-4 w-4" />
                             </GlowButton>
                         </Link>
-                        <Link href="/gallery">
+                        <Link href="/design">
                             <GlowButton variant="secondary" size="lg" className="w-full sm:w-auto">
-                                View Collections
+                                Create Custom Request
                             </GlowButton>
                         </Link>
                     </motion.div>

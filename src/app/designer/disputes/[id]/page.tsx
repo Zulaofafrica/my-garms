@@ -6,6 +6,7 @@ import { GlowButton } from "@/components/ui/glow-button";
 import { SimpleImageUpload } from "@/components/ui/simple-image-upload";
 import { ArrowLeft, AlertTriangle, CheckCircle, XCircle, MessageSquare } from "lucide-react";
 import { DisputeService } from "@/lib/dispute-service"; // We can't use service directly in client comp, need API
+import { useToast } from "@/components/ui/toast";
 
 interface DisputeResponsePageProps {
     params: Promise<{ id: string }>;
@@ -13,6 +14,7 @@ interface DisputeResponsePageProps {
 
 export default function DisputeResponsePage({ params }: DisputeResponsePageProps) {
     const router = useRouter();
+    const toast = useToast();
     const [dispute, setDispute] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [action, setAction] = useState<'ACCEPT' | 'REJECT' | 'COUNTER'>('ACCEPT');
@@ -46,7 +48,7 @@ export default function DisputeResponsePage({ params }: DisputeResponsePageProps
 
     const handleSubmit = async () => {
         if (!comment && action !== 'ACCEPT') {
-            alert("Please provide a comment.");
+            toast.warning("Please provide a comment.");
             return;
         }
 
@@ -65,11 +67,11 @@ export default function DisputeResponsePage({ params }: DisputeResponsePageProps
 
             if (!res.ok) throw new Error('Failed to submit response');
 
-            alert("Response submitted.");
+            toast.success("Response submitted.");
             router.push('/designer');
         } catch (error) {
             console.error(error);
-            alert("Failed to submit response.");
+            toast.error("Failed to submit response.");
         } finally {
             setIsSubmitting(false);
         }

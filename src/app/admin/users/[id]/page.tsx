@@ -4,6 +4,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, User, ShoppingBag, Ruler, Wallet, Briefcase, Calendar, CreditCard } from 'lucide-react';
+import { useToast } from '@/components/ui/toast';
+import { useConfirm } from '@/components/ui/confirm-modal';
 
 // Types mirror the API response
 interface UserDetailsData {
@@ -37,6 +39,8 @@ interface UserDetailsData {
 export default function UserDetailsPage() {
     const params = useParams();
     const router = useRouter();
+    const toast = useToast();
+    const { confirm } = useConfirm();
     const [data, setData] = useState<UserDetailsData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -49,13 +53,13 @@ export default function UserDetailsPage() {
                 setData(json);
             } catch (err) {
                 console.error(err);
-                alert('Failed to load user details');
+                toast.error('Failed to load user details');
             } finally {
                 setIsLoading(false);
             }
         };
         if (params.id) fetchDetails();
-    }, [params.id]);
+    }, [params.id, toast]);
 
     if (isLoading) return <div className="p-8">Loading details...</div>;
     if (!data) return <div className="p-8">User not found</div>;
@@ -221,14 +225,21 @@ export default function UserDetailsPage() {
                                         {payment.status === 'pending' && (
                                             <button
                                                 onClick={async () => {
-                                                    if (!confirm('Confirm receipt of this payment?')) return;
+                                                    const confirmed = await confirm({
+                                                        title: "Approve Payment",
+                                                        message: "Confirm receipt of this payment?",
+                                                        type: "info",
+                                                        confirmText: "Approve",
+                                                        cancelText: "Cancel"
+                                                    });
+                                                    if (!confirmed) return;
                                                     try {
                                                         const res = await fetch(`/api/admin/commission/${payment.id}/approve`, { method: 'POST' });
                                                         if (res.ok) {
-                                                            alert('Payment approved!');
+                                                            toast.success('Payment approved!');
                                                             window.location.reload();
                                                         }
-                                                    } catch (e) { alert('Failed to approve'); }
+                                                    } catch (e) { toast.error('Failed to approve'); }
                                                 }}
                                                 className="w-full py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
                                             >

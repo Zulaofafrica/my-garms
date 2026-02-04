@@ -99,7 +99,7 @@ export const ordersApi = {
 
     create: async (data: {
         profileId: string;
-        templateId: string;
+        templateId?: string;
         templateName: string;
         fabricId: string;
         fabricName: string;
@@ -109,6 +109,10 @@ export const ordersApi = {
         style?: string;
         color?: string;
         notes?: string;
+        urgency?: string;
+        fabricSource?: string;
+        budgetRange?: string;
+        complexity?: string;
     }) => {
         return fetchApi<{ order: Order; message: string }>('/orders', {
             method: 'POST',
@@ -151,6 +155,25 @@ export const ordersApi = {
         return fetchApi<{ order: Order; message: string }>(`/orders/${id}/feedback`, {
             method: 'POST',
             body: JSON.stringify({ action: 'reply', ...data }),
+        });
+    },
+
+    submitRating: async (id: string, data: { rating: number; review?: string }) => {
+        return fetchApi<{ order: Order; message: string }>(`/orders/${id}/rate`, {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    },
+
+    // Designer Selection Flow
+    getMatches: async (orderId: string) => {
+        return fetchApi<{ matches: any[] }>(`/orders/${orderId}/matches`);
+    },
+
+    confirmSelection: async (orderId: string, data: { method: 'auto' | 'manual'; designerId?: string }) => {
+        return fetchApi<{ success: boolean; message: string }>(`/orders/${orderId}/assign`, {
+            method: 'POST',
+            body: JSON.stringify(data),
         });
     },
 
@@ -231,6 +254,8 @@ export const designerApi = {
         workshopAddress?: string;
         phoneNumber?: string;
         identificationUrl?: string;
+        profilePhoto?: string;
+        portfolioSamples?: string[];
     }) => {
         return fetchApi<{ success: true; profile: any }>('/designer/profile', {
             method: 'PUT',
@@ -293,7 +318,49 @@ export const adminApi = {
     getAuditLogs: async () => {
         return fetchApi<{ logs: any[] }>('/admin/logs');
     },
+
+    // Curated Designs
+    getDesigns: async () => {
+        return fetchApi<{ designs: CuratedDesign[] }>('/admin/designs');
+    },
+    getDesign: async (id: string) => {
+        return fetchApi<{ design: CuratedDesign }>(`/admin/designs/${id}`);
+    },
+    createDesign: async (data: Partial<CuratedDesign>) => {
+        return fetchApi<{ design: CuratedDesign; error?: string }>('/admin/designs', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    },
+    updateDesign: async (id: string, data: Partial<CuratedDesign>) => {
+        return fetchApi<{ design: CuratedDesign; error?: string }>(`/admin/designs/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
+    },
+    deleteDesign: async (id: string) => {
+        return fetchApi<{ success: boolean; error?: string }>(`/admin/designs/${id}`, {
+            method: 'DELETE',
+        });
+    }
 };
+
+export interface CuratedDesign {
+    id: string;
+    title: string;
+    category: string;
+    style_aesthetic: string;
+    description: string;
+    base_price_range: string;
+    complexity_level: string;
+    designer_skill_level: string;
+    default_fabric: string;
+    images: string[];
+    is_active: boolean;
+    admin_notes: string;
+    created_at: string;
+    updated_at: string;
+}
 
 // Types for API responses
 export interface User {
@@ -387,4 +454,6 @@ export interface Order {
     createdAt: string;
     updatedAt: string;
     commissionPaid?: boolean;
+    rating?: number;
+    review?: string;
 }

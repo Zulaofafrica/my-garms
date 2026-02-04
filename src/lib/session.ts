@@ -5,6 +5,7 @@ const SESSION_COOKIE_NAME = 'mygarms_session';
 
 export interface Session {
     userId: string;
+    role: 'customer' | 'designer' | 'admin';
 }
 
 // Get current session from cookies
@@ -25,9 +26,9 @@ export async function getSession(): Promise<Session | null> {
 }
 
 // Set session cookie
-export async function setSession(userId: string): Promise<void> {
+export async function setSession(userId: string, role: 'customer' | 'designer' | 'admin'): Promise<void> {
     const cookieStore = await cookies();
-    const session: Session = { userId };
+    const session: Session = { userId, role };
     const value = Buffer.from(JSON.stringify(session)).toString('base64');
 
     cookieStore.set(SESSION_COOKIE_NAME, value, {

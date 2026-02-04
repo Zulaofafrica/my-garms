@@ -4,14 +4,17 @@
 import { useEffect, useState } from 'react';
 import { adminApi, ordersApi, Order, User } from '@/lib/api-client';
 import { Search, Filter, ShoppingBag, User as UserIcon, Check } from 'lucide-react';
+import { useToast } from '@/components/ui/toast';
 
 export default function OrdersManagementPage() {
+    const toast = useToast();
     const [orders, setOrders] = useState<Order[]>([]);
     const [designers, setDesigners] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [assigningOrderId, setAssigningOrderId] = useState<string | null>(null);
+    const [dateFilter, setDateFilter] = useState('all');
 
     useEffect(() => {
         const loadData = async () => {
@@ -37,12 +40,15 @@ export default function OrdersManagementPage() {
         try {
             await adminApi.assignDesigner(orderId, designerId);
             setOrders(prev => prev.map(o => o.id === orderId ? { ...o, assignedDesignerId: designerId, assignmentStatus: 'assigned' } : o));
+            toast.success("Designer assigned successfully!");
         } catch (err) {
-            alert('Failed to assign designer');
+            toast.error('Failed to assign designer');
         } finally {
             setAssigningOrderId(null);
         }
     };
+
+
 
     const filteredOrders = orders.filter(order => {
         const matchesSearch =
@@ -51,6 +57,22 @@ export default function OrdersManagementPage() {
             (order.fabricName && order.fabricName.toLowerCase().includes(searchQuery.toLowerCase()));
 
         if (!matchesSearch) return false;
+
+        // Date Filter
+        if (dateFilter !== 'all') {
+            const orderDate = new Date(order.createdAt);
+            const now = new Date();
+            if (dateFilter === 'today') {
+                const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                if (orderDate < startOfToday) return false;
+            } else if (dateFilter === 'week') {
+                const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                if (orderDate < sevenDaysAgo) return false;
+            } else if (dateFilter === 'month') {
+                const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                if (orderDate < thirtyDaysAgo) return false;
+            }
+        }
 
         if (filter === 'all') return true;
         if (filter === 'unassigned') return !order.assignedDesignerId;
@@ -63,25 +85,38 @@ export default function OrdersManagementPage() {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <h1 className="text-2xl font-bold text-slate-800">Order Management</h1>
-                <div className="flex gap-4 items-center">
-                    <div className="relative">
+                <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                    <div className="relative flex-1 md:flex-none">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                         <input
                             type="text"
                             placeholder="Search Order ID..."
-                            className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
+                            className="w-full md:w-64 pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <div className="flex gap-2">
+
+                    {/* Date Filter */}
+                    <select
+                        className="px-4 py-2 border border-slate-200 rounded-lg text-sm bg-white"
+                        value={dateFilter}
+                        onChange={(e) => setDateFilter(e.target.value)}
+                    >
+                        <option value="all">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="week">Last 7 Days</option>
+                        <option value="month">Last Month</option>
+                    </select>
+
+                    <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
                         {['all', 'unassigned', 'active', 'disputed'].map(f => (
                             <button
                                 key={f}
                                 onClick={() => setFilter(f)}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${filter === f ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors whitespace-nowrap ${filter === f ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}
                             >
                                 {f}
                             </button>

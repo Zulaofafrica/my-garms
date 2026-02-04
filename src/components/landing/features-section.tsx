@@ -4,8 +4,8 @@ import { BentoGrid, BentoGridItem } from "@/components/ui/bento-grid";
 import {
     Shirt,
     Palette,
-    Truck,
-    Users
+    Users,
+    Sparkles
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -43,27 +43,27 @@ const Skeleton = ({ className }: { className?: string }) => (
 
 const items = [
     {
-        title: "Custom 3D Canvas",
-        description: "Design every inch of your garment in our real-time 3D studio.",
+        title: "Smart Design Wizard",
+        description: "Simply tell us your vision or pick a style. Our smart wizard guides you through every detail in minutes.",
         header: <Skeleton className="bg-gradient-to-br from-violet-500/20 to-purple-500/20" />,
+        icon: <Sparkles className="h-4 w-4 text-neutral-500" />,
+    },
+    {
+        title: "Expert Matching",
+        description: "Let our AI match you with the perfect designer, or hand-pick your favorite expert from our curated list.",
+        header: <Skeleton className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20" />,
+        icon: <Users className="h-4 w-4 text-neutral-500" />,
+    },
+    {
+        title: "Curated Collections",
+        description: "Explore ready-to-make designs from top creators, with fixed pricing and clear timelines.",
+        header: <Skeleton className="bg-gradient-to-br from-pink-500/20 to-rose-500/20" />,
         icon: <Shirt className="h-4 w-4 text-neutral-500" />,
     },
     {
         title: "Premium Materials",
-        description: "Sourced from the finest mills worldwide.",
-        header: <Skeleton className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20" />,
-        icon: <Palette className="h-4 w-4 text-neutral-500" />,
-    },
-    {
-        title: "Fast Delivery",
-        description: "From our studio to your door in days.",
+        description: "Sourced from the finest mills worldwide, ensuring your custom piece looks and feels exceptional.",
         header: <Skeleton className="bg-gradient-to-br from-orange-500/20 to-yellow-500/20" />,
-        icon: <Truck className="h-4 w-4 text-neutral-500" />,
-    },
-    {
-        title: "Community Styles",
-        description: "Get inspired by trending designs from our community.",
-        header: <Skeleton className="bg-gradient-to-br from-pink-500/20 to-rose-500/20" />,
-        icon: <Users className="h-4 w-4 text-neutral-500" />,
+        icon: <Palette className="h-4 w-4 text-neutral-500" />,
     },
 ];

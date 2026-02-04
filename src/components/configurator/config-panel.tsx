@@ -77,9 +77,9 @@ export function ConfigPanel() {
             <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between">
                 <div className="text-white">
                     <div className="text-xs opacity-50">Total Estimation</div>
-                    <div className="text-xl font-bold">$129.00</div>
+                    <div className="text-xl font-bold">₦129,000</div>
                 </div>
-                <GlowButton size="sm">Add to Cart</GlowButton>
+                <GlowButton size="sm">Place Order</GlowButton>
             </div>
         </div>
     );

@@ -23,48 +23,77 @@ export class MatchingService {
      * 4. (Optional) Specialty matches order type
      */
     static async findEligibleDesigners(order: DbOrder): Promise<DbDesignerProfile[]> {
-        // 1. Get all available designers
+        // 1. Base Pool: Available + Capacity
         const availableDesigners = await findAllByField<DbDesignerProfile>('designer_profiles', 'status', 'available');
+        let basePool = availableDesigners.filter(d => d.currentLoad < d.maxCapacity);
+        console.log(`Matching: ${basePool.length} designers available with capacity`);
 
-        // 2. Filter by Capacity
-        let eligible = availableDesigners.filter(d => d.currentLoad < d.maxCapacity);
+        if (basePool.length === 0) return [];
 
-        // 3. Filter by Category (Strict)
+        // 2. Category Filter (Hard Requirement)
         if (order.category) {
-            eligible = eligible.filter(d => d.specialties.some(s => s === order.category));
+            const orderCat = order.category.toLowerCase();
+            basePool = basePool.filter(d => d.specialties.some(s => {
+                const spec = s.toLowerCase();
+                return orderCat.includes(spec) || spec.includes(orderCat);
+            }));
+            console.log(`Matching: ${basePool.length} matched category '${orderCat}'`);
         } else if (order.templateName && order.templateName !== 'custom-template') {
-            // Fallback for legacy/other orders
             const term = order.templateName.toLowerCase();
-            eligible = eligible.filter(d => d.specialties.some(s => s.toLowerCase().includes(term)));
+            basePool = basePool.filter(d => d.specialties.some(s => s.toLowerCase().includes(term)));
         }
 
-        // 4. Filter by Style (Refinement - Prefer Style Match)
-        if (order.style && eligible.length > 0) {
-            const styleMatches = eligible.filter(d => d.specialties.includes(order.style!));
-            if (styleMatches.length > 0) {
-                console.log(`Refined matches by style ${order.style}: ${styleMatches.length} designers`);
-                eligible = styleMatches;
-            }
+        if (basePool.length === 0) {
+            console.warn("Matching: No designers matched category, returning empty.");
+            return [];
         }
 
-        // 5. Filter by Complexity (Skill Level)
-        // simple -> basic+, moderate -> advanced+, detailed -> premium
-        if (order.complexity) {
-            eligible = eligible.filter(d => {
-                if (order.complexity === 'simple') return true; // Everyone can do simple
-                if (order.complexity === 'moderate') return d.skillLevel !== 'basic';
-                if (order.complexity === 'detailed') return d.skillLevel === 'premium';
-                return true;
-            });
+        // 3. Define Matchers
+        const matchesStyle = (d: DbDesignerProfile) =>
+            order.style ? d.specialties.includes(order.style) : true;
+
+        const matchesComplexity = (d: DbDesignerProfile) => {
+            if (!order.complexity) return true;
+            if (order.complexity === 'simple') return true;
+            if (order.complexity === 'moderate') return d.skillLevel !== 'basic';
+            if (order.complexity === 'detailed') return d.skillLevel === 'premium';
+            return true;
+        };
+
+        // 4. Tiered Selection
+        // Tier 1: Perfect Match (Style + Complexity)
+        const perfectMatches = basePool.filter(d => matchesStyle(d) && matchesComplexity(d));
+        if (perfectMatches.length > 0) {
+            console.log(`Matching: Found ${perfectMatches.length} perfect matches`);
+            return this.sortDesigners(perfectMatches);
         }
 
-        // 6. Sort by Rating (desc) and Load (asc)
-        eligible.sort((a, b) => {
-            if (b.rating !== a.rating) return b.rating - a.rating;
-            return a.currentLoad - b.currentLoad;
+        // Tier 2: Style Match (Ignore Complexity)
+        // We prioritize Style (Aesthetics) over Complexity (Skill) for the MVP, 
+        // assuming "Basic" designers can maybe attempt "Moderate" work or user prefers the look.
+        const styleMatches = basePool.filter(d => matchesStyle(d));
+        if (styleMatches.length > 0) {
+            console.log(`Matching: Fallback to ${styleMatches.length} style matches (ignoring complexity)`);
+            return this.sortDesigners(styleMatches);
+        }
+
+        // Tier 3: Complexity Match (Ignore Style)
+        const complexityMatches = basePool.filter(d => matchesComplexity(d));
+        if (complexityMatches.length > 0) {
+            console.log(`Matching: Fallback to ${complexityMatches.length} complexity matches (ignoring style)`);
+            return this.sortDesigners(complexityMatches);
+        }
+
+        // Tier 4: Base Pool (Category Only)
+        console.log(`Matching: Fallback to ${basePool.length} category matches`);
+        return this.sortDesigners(basePool);
+    }
+
+    private static sortDesigners(designers: DbDesignerProfile[]) {
+        return designers.sort((a, b) => {
+            if (b.rating !== a.rating) return b.rating - a.rating; // High rating first
+            return a.currentLoad - b.currentLoad; // Lower load first
         });
-
-        return eligible;
     }
 
     /**

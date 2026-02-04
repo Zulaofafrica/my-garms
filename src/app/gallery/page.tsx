@@ -17,8 +17,7 @@ export default function GalleryPage() {
                         Curated Collections
                     </h1>
                     <p className="text-lg text-muted-foreground">
-                        Explore the latest community designs and detailed craftsmanship.
-                        Click any item to use it as a base for your own design.
+                        Start with a MyGarms-curated design and customize it to create your perfect outfit faster and with confidence.
                     </p>
                 </div>
 

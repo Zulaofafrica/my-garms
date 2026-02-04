@@ -23,6 +23,8 @@ export async function POST(request: NextRequest) {
             firstName: userData.firstName,
             lastName: userData.lastName,
             role: 'customer',
+            status: 'active',
+            isVerified: false,
             createdAt: new Date().toISOString(),
         };
         await insertOne('users', user);
@@ -46,7 +48,7 @@ export async function POST(request: NextRequest) {
             id: orderId,
             userId: userId,
             profileId: profileId,
-            templateId: orderData.templateId || 'custom',
+            templateId: orderData.templateId,
             templateName: orderData.templateName || 'Custom Request',
             fabricId: orderData.fabricId || 'custom',
             fabricName: orderData.fabricName,
@@ -58,13 +60,19 @@ export async function POST(request: NextRequest) {
             style: orderData.style,
             color: orderData.color,
             notes: orderData.notes,
+            // New fields
+            urgency: orderData.urgency,
+            fabricSource: orderData.fabricSource,
+            budgetRange: orderData.budgetRange,
+            complexity: orderData.complexity,
+            category: orderData.category,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };
         await insertOne('orders', order);
 
         // 5. Set Session (Auto-login)
-        await setSession(userId);
+        await setSession(userId, 'customer');
 
         // 6. Trigger Matching Service (Async - don't await blocking response?)
         // Better to await to ensure it runs, but errors shouldn't fail the request ideally.

@@ -11,6 +11,7 @@ import { ArrowRight, ArrowLeft } from "lucide-react";
 import { ImageUpload } from "./image-upload";
 import { SpecForm } from "./spec-form";
 import { CategoryStyleForm } from "./CategoryStyleForm";
+import { useToast } from "@/components/ui/toast";
 
 const formSchema = z.object({
     images: z.array(z.any()).min(1, "Please upload at least one image"),
@@ -18,6 +19,10 @@ const formSchema = z.object({
     fabric: z.string().optional(),
     color: z.string().optional(),
     style: z.string().min(1, "Please select a style"),
+    // New fields
+    urgency: z.string().min(1, "Please select a timeline"),
+    fabricSource: z.string().optional(),
+    budgetRange: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -31,10 +36,9 @@ const STEPS = [
 import { ordersApi, profilesApi } from "@/lib/api-client";
 import { useEffect } from "react";
 
-// ... (existing imports)
-
 export function DesignRequestWizard() {
     const router = useRouter();
+    const toast = useToast();
     const [currentStep, setCurrentStep] = useState(1);
     const [userProfileId, setUserProfileId] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -58,6 +62,8 @@ export function DesignRequestWizard() {
         resolver: zodResolver(formSchema),
         defaultValues: {
             images: [],
+            fabricSource: 'unsure',
+            budgetRange: 'standard'
         },
     });
 
@@ -66,7 +72,7 @@ export function DesignRequestWizard() {
 
     const onSubmit = async (data: FormData) => {
         if (!userProfileId) {
-            alert("Please create a measurement profile in your account first.");
+            toast.warning("Please create a measurement profile in your account first.");
             router.push("/profile");
             return;
         }
@@ -80,22 +86,27 @@ export function DesignRequestWizard() {
 
             await ordersApi.create({
                 profileId: userProfileId,
-                templateId: "custom-template",
+                templateId: undefined,
                 templateName: data.style || "Custom Request",
                 fabricId: "custom-fabric",
                 fabricName: data.fabric || "Custom Fabric",
-                total: 0, // 0 indicates "Calculating" for now, designer sets price
+                total: 0,
                 images: imageUrls,
-                category: data.category as any, // Add category to order
+                category: data.category as any,
                 style: data.style,
                 color: data.color,
                 notes: "Please review my design request.",
+                // Pass new fields
+                urgency: data.urgency,
+                fabricSource: data.fabricSource,
+                budgetRange: data.budgetRange,
             });
 
-            router.push("/profile"); // Redirect to profile to see the order
+            toast.success("Request submitted successfully!");
+            router.push("/profile");
         } catch (error) {
             console.error("Submission failed:", error);
-            alert("Failed to submit request.");
+            toast.error("Failed to submit request.");
         } finally {
             setIsSubmitting(false);
         }

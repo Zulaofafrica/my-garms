@@ -4,13 +4,17 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { designerApi, Order } from "@/lib/api-client";
-import { ArrowLeft, Check, X, Clock, DollarSign, Shirt, Tag, Gauge, Zap, Layers } from "lucide-react";
+import { ArrowLeft, Check, X, Clock, Shirt, Tag, Gauge, Zap, Layers } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
+import { useConfirm } from "@/components/ui/confirm-modal";
 import styles from "../../designer.module.css";
 // Reuse designer.module.css assuming it exists, or use tailwind classes.
 // Checked previous logs, designer.module.css exists.
 
 export default function DesignerRequestsPage() {
     const router = useRouter();
+    const toast = useToast();
+    const { confirm } = useConfirm();
     const [requests, setRequests] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null); // orderId being acted on
@@ -31,28 +35,43 @@ export default function DesignerRequestsPage() {
     };
 
     const handleAccept = async (id: string) => {
-        if (!confirm("Are you sure you want to accept this order? You will be responsible for fulfilling it.")) return;
+        const confirmed = await confirm({
+            title: "Accept Order",
+            message: "Are you sure you want to accept this order? You will be responsible for fulfilling it.",
+            type: "warning",
+            confirmText: "Accept Order",
+            cancelText: "Cancel"
+        });
+        if (!confirmed) return;
 
         setActionLoading(id);
         try {
             await designerApi.acceptRequest(id);
-            alert("Order Accepted! Redirecting to order details...");
+            toast.success("Order Accepted! Redirecting to order details...");
             router.push(`/designer/orders/${id}`);
         } catch (error) {
-            alert("Failed to accept order: " + (error instanceof Error ? error.message : "Unknown error"));
+            toast.error("Failed to accept order: " + (error instanceof Error ? error.message : "Unknown error"));
             setActionLoading(null);
         }
     };
 
     const handleDecline = async (id: string) => {
-        if (!confirm("Decline this request? It will be removed from your list.")) return;
+        const confirmed = await confirm({
+            title: "Decline Request",
+            message: "Decline this request? It will be removed from your list.",
+            type: "danger",
+            confirmText: "Decline",
+            cancelText: "Keep"
+        });
+        if (!confirmed) return;
 
         setActionLoading(id);
         try {
             await designerApi.declineRequest(id);
             setRequests(prev => prev.filter(r => r.id !== id));
+            toast.info("Request declined");
         } catch (error) {
-            alert("Failed to decline");
+            toast.error("Failed to decline");
         } finally {
             setActionLoading(null);
         }
@@ -140,11 +159,18 @@ export default function DesignerRequestsPage() {
                                         <div className="bg-white/5 p-3 rounded-lg">
                                             <span className="block text-slate-500 text-xs uppercase tracking-wider mb-1">Budget</span>
                                             <span className="text-white font-medium flex items-center gap-1">
-                                                <DollarSign size={14} className="text-green-400" />
-                                                {request.total > 0 ? `~₦${request.total.toLocaleString()}` : "To Quote"}
+                                                {request.total > 0
+                                                    ? `~₦${request.total.toLocaleString()}`
+                                                    : (request.budgetRange
+                                                        ? request.budgetRange === 'budget' ? 'Economy'
+                                                            : request.budgetRange === 'standard' ? 'Standard'
+                                                                : 'Premium'
+                                                        : "To Quote")
+                                                }
                                             </span>
                                         </div>
-                                        {/* Images Preview */}
+
+                                        {/* Images Preview - Inside Grid */}
                                         {request.images && request.images.length > 0 && (
                                             <div className="relative aspect-square rounded-lg overflow-hidden border border-white/10">
                                                 <img src={request.images[0]} alt="Ref" className="object-cover w-full h-full" />
@@ -156,6 +182,19 @@ export default function DesignerRequestsPage() {
                                             </div>
                                         )}
                                     </div>
+
+                                    {/* Curated Design Badge & Commission Note - Outside Grid */}
+                                    {request.templateId && !['custom', 'custom-template'].includes(request.templateId) && (
+                                        <div className="flex items-center gap-3 bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
+                                            <div className="bg-purple-500 text-white text-xs font-bold px-2 py-1 rounded">
+                                                CURATED DESIGN
+                                            </div>
+                                            <p className="text-purple-200 text-xs">
+                                                <span className="font-semibold">Note:</span> Price is fixed by platform.
+                                                <span className="text-white bg-purple-500/20 px-1 rounded ml-1">20% Commission</span> applies.
+                                            </p>
+                                        </div>
+                                    )}
 
                                     {request.notes && (
                                         <div className="bg-slate-900/50 p-3 rounded-lg border border-white/5">
@@ -192,6 +231,6 @@ export default function DesignerRequestsPage() {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 }

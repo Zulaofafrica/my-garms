@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
         }
 
         const user = await findById<DbUser>('users', session.userId);
-        if (!user || user.role !== 'designer') {
+        if (!user || (user.role !== 'designer' && user.role !== 'admin')) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
         // Filter for orders where this designer is shortlisted AND status is open for assignment
         const requests = allOrders.filter(order =>
             order.assignmentStatus === 'shortlisted' &&
-            order.shortlistedDesignerIds?.includes(user.id)
+            (user.role === 'admin' || order.shortlistedDesignerIds?.includes(user.id))
         );
 
         return NextResponse.json({ requests });

@@ -53,13 +53,13 @@ export function NotificationBadge() {
                     )}
                 </div>
             </PopoverTrigger>
-            <PopoverContent className="w-80 p-0" align="end">
-                <div className="p-4 border-b">
-                    <h4 className="font-semibold text-sm">Notifications</h4>
+            <PopoverContent className="w-80 p-0 bg-slate-900 border-slate-700 shadow-xl z-50" align="end">
+                <div className="p-4 border-b border-slate-700 bg-slate-800/50">
+                    <h4 className="font-semibold text-sm text-white">Notifications</h4>
                 </div>
-                <div className="max-h-[300px] overflow-y-auto">
+                <div className="max-h-[400px] overflow-y-auto">
                     {notifications.length === 0 ? (
-                        <div className="p-8 text-center text-sm text-muted-foreground">
+                        <div className="p-8 text-center text-sm text-slate-400">
                             No notifications
                         </div>
                     ) : (
@@ -68,22 +68,36 @@ export function NotificationBadge() {
                                 key={n.id}
                                 href="/notifications"
                                 onClick={() => setIsOpen(false)}
-                                className={`flex flex-col gap-1 p-4 border-b hover:bg-muted/50 transition-colors ${!n.read ? 'bg-muted/20' : ''}`}
+                                className={`flex flex-col gap-2 p-4 border-b border-slate-800 hover:bg-slate-800/50 transition-colors ${!n.read ? 'bg-indigo-500/5' : ''}`}
                             >
-                                <div className="flex justify-between items-start">
-                                    <span className="text-sm font-medium leading-none">{n.type.replace('_', ' ').toUpperCase()}</span>
-                                    <span className="text-xs text-muted-foreground">{new Date(n.createdAt).toLocaleDateString()}</span>
+                                <div className="flex justify-between items-start gap-2">
+                                    <span className="text-xs font-semibold text-white uppercase tracking-wider">
+                                        {n.type.replace('_', ' ')}
+                                    </span>
+                                    <span className="text-xs text-slate-500 whitespace-nowrap">
+                                        {new Date(n.createdAt).toLocaleDateString()}
+                                    </span>
                                 </div>
-                                <p className="text-sm text-muted-foreground line-clamp-2">
+                                <p className="text-sm text-slate-300 line-clamp-2 leading-relaxed">
                                     {n.message}
                                 </p>
+                                {!n.read && (
+                                    <div className="flex items-center gap-1 mt-1">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-400"></div>
+                                        <span className="text-xs text-indigo-400">New</span>
+                                    </div>
+                                )}
                             </Link>
                         ))
                     )}
                 </div>
-                <div className="p-2 border-t text-center">
-                    <Link href="/notifications" onClick={() => setIsOpen(false)} className="text-xs text-primary hover:underline">
-                        View All
+                <div className="p-3 border-t border-slate-700 text-center bg-slate-800/30">
+                    <Link
+                        href="/notifications"
+                        onClick={() => setIsOpen(false)}
+                        className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
+                    >
+                        View All Notifications
                     </Link>
                 </div>
             </PopoverContent>

@@ -13,7 +13,8 @@ import {
     FileText,
     LogOut,
     Menu,
-    X
+    X,
+    Palette
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -129,6 +130,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { href: '/admin', label: 'Overview', icon: LayoutDashboard },
         { href: '/admin/users', label: 'User Management', icon: Users },
         { href: '/admin/orders', label: 'Orders & Assignment', icon: ShoppingBag },
+        { href: '/admin/designs', label: 'Curated Designs', icon: Palette },
         { href: '/admin/disputes', label: 'Disputes', icon: AlertTriangle },
         { href: '/admin/logs', label: 'Audit Logs', icon: FileText },
     ];
@@ -136,7 +138,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return (
         <div className="min-h-screen bg-slate-50 flex">
             {/* Sidebar */}
-            <aside className={`fixed inset-y-0 left-0 index-50 bg-slate-900 text-white w-64 transition-transform transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:static`}>
+            <aside className={`fixed inset-y-0 left-0 z-50 bg-slate-900 text-white w-64 transition-transform transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:static`}>
                 <div className="p-6 border-b border-white/10 flex justify-between items-center">
                     <h1 className="text-xl font-bold">Admin Portal</h1>
                     <button className="md:hidden" onClick={() => setIsSidebarOpen(false)}>

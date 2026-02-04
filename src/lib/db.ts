@@ -71,6 +71,9 @@ export interface DbDesignerProfile {
     workshopAddress?: string;
     phoneNumber?: string;
     identificationUrl?: string;
+    profilePhoto?: string;
+    portfolioSamples?: string[];
+    reviewCount: number;
 }
 
 export interface DbAuditLog {
@@ -87,7 +90,7 @@ export interface DbOrder {
     id: string;
     userId: string;
     profileId: string;
-    templateId: string;
+    templateId?: string;
     templateName: string;
     fabricId: string;
     fabricName: string;
@@ -147,6 +150,9 @@ export interface DbOrder {
     productionEndDate?: string;
     createdAt: string;
     updatedAt: string;
+    commissionPaid?: boolean;
+    rating?: number;
+    review?: string;
 }
 
 export interface DbNotification {
@@ -156,6 +162,23 @@ export interface DbNotification {
     message: string;
     read: boolean;
     createdAt: string;
+}
+
+export interface DbCuratedDesign {
+    id: string;
+    title: string;
+    category: string;
+    style_aesthetic: string;
+    description: string;
+    base_price_range: string;
+    complexity_level: string;
+    designer_skill_level: string;
+    default_fabric: string;
+    images: string[];
+    is_active: boolean;
+    admin_notes: string;
+    created_at: string;
+    updated_at: string;
 }
 
 export interface DbCommissionPayment {
@@ -249,11 +272,14 @@ function mapDesignerProfile(row: any): DbDesignerProfile {
         workshopAddress: row.workshop_address,
         phoneNumber: row.phone_number,
         identificationUrl: row.identification_url,
+        profilePhoto: row.profile_photo,
+        portfolioSamples: row.portfolio_samples || [],
+        reviewCount: row.review_count || 0,
     };
 }
 
 function mapOrder(row: any): DbOrder {
-    const { id, user_id, status, total, created_at, updated_at, data } = row;
+    const { id, user_id, status, total, created_at, updated_at, template_id, template_name, data } = row;
     return {
         id,
         userId: user_id,
@@ -261,6 +287,8 @@ function mapOrder(row: any): DbOrder {
         total: Number(total),
         createdAt: created_at?.toISOString() || new Date().toISOString(),
         updatedAt: updated_at?.toISOString() || new Date().toISOString(),
+        templateId: template_id,
+        templateName: template_name,
         ...data,
         commissionPaid: row.commission_paid || false,
     };
@@ -333,6 +361,36 @@ function mapEmailJob(row: any): DbEmailJob {
     };
 }
 
+function mapNotification(row: any): DbNotification {
+    return {
+        id: row.id,
+        userId: row.user_id,
+        type: row.type,
+        message: row.message,
+        read: row.read,
+        createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+    };
+}
+
+function mapCuratedDesign(row: any): DbCuratedDesign {
+    return {
+        id: row.id,
+        title: row.title,
+        category: row.category,
+        style_aesthetic: row.style_aesthetic,
+        description: row.description,
+        base_price_range: row.base_price_range,
+        complexity_level: row.complexity_level,
+        designer_skill_level: row.designer_skill_level,
+        default_fabric: row.default_fabric,
+        images: row.images || [],
+        is_active: row.is_active,
+        admin_notes: row.admin_notes,
+        created_at: row.created_at?.toISOString() || new Date().toISOString(),
+        updated_at: row.updated_at?.toISOString() || new Date().toISOString(),
+    };
+}
+
 export async function readCollection<T>(collection: string): Promise<T[]> {
     try {
         if (collection === 'users') {
@@ -344,6 +402,9 @@ export async function readCollection<T>(collection: string): Promise<T[]> {
         } else if (collection === 'designer_profiles') {
             const { rows } = await query('SELECT * FROM designer_profiles');
             return rows.map(mapDesignerProfile) as unknown as T[];
+        } else if (collection === 'audit_logs') {
+            const { rows } = await query('SELECT * FROM audit_logs ORDER BY timestamp DESC');
+            return rows.map(mapAuditLog) as unknown as T[];
         } else if (collection === 'orders') {
             const { rows } = await query('SELECT * FROM orders');
             return rows.map(mapOrder) as unknown as T[];
@@ -359,6 +420,12 @@ export async function readCollection<T>(collection: string): Promise<T[]> {
         } else if (collection === 'email_queue') {
             const { rows } = await query('SELECT * FROM email_queue');
             return rows.map(mapEmailJob) as unknown as T[];
+        } else if (collection === 'notifications') {
+            const { rows } = await query('SELECT * FROM notifications');
+            return rows.map(mapNotification) as unknown as T[];
+        } else if (collection === 'curated_designs') {
+            const { rows } = await query('SELECT * FROM curated_designs ORDER BY created_at DESC');
+            return rows.map(mapCuratedDesign) as unknown as T[];
         }
         return [];
     } catch (error) {
@@ -393,6 +460,12 @@ export async function findById<T extends { id: string }>(
         } else if (collection === 'commission_payments') {
             const { rows } = await query('SELECT * FROM commission_payments WHERE id = $1 LIMIT 1', [id]);
             return rows.length ? (mapCommissionPayment(rows[0]) as unknown as T) : null;
+        } else if (collection === 'notifications') {
+            const { rows } = await query('SELECT * FROM notifications WHERE id = $1 LIMIT 1', [id]);
+            return rows.length ? (mapNotification(rows[0]) as unknown as T) : null;
+        } else if (collection === 'curated_designs') {
+            const { rows } = await query('SELECT * FROM curated_designs WHERE id = $1 LIMIT 1', [id]);
+            return rows.length ? (mapCuratedDesign(rows[0]) as unknown as T) : null;
         }
         return null;
     } catch (error) {
@@ -484,15 +557,15 @@ export async function insertOne<T extends { id: string }>(
         } else if (collection === 'designer_profiles') {
             const d = item as unknown as DbDesignerProfile;
             await query(
-                'INSERT INTO designer_profiles (id, user_id, specialties, skill_level, max_capacity, current_load, rating, status, bank_name, account_number, account_name, workshop_address, phone_number, identification_url, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)',
-                [d.id, d.userId, JSON.stringify(d.specialties), d.skillLevel, d.maxCapacity, d.currentLoad, d.rating, d.status, d.bankName, d.accountNumber, d.accountName, d.workshopAddress, d.phoneNumber, d.identificationUrl, d.createdAt, d.updatedAt]
+                'INSERT INTO designer_profiles (id, user_id, specialties, skill_level, max_capacity, current_load, rating, status, bank_name, account_number, account_name, workshop_address, phone_number, identification_url, profile_photo, portfolio_samples, review_count, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)',
+                [d.id, d.userId, JSON.stringify(d.specialties), d.skillLevel, d.maxCapacity, d.currentLoad, d.rating, d.status, d.bankName, d.accountNumber, d.accountName, d.workshopAddress, d.phoneNumber, d.identificationUrl, d.profilePhoto, JSON.stringify(d.portfolioSamples || []), d.reviewCount || 0, d.createdAt, d.updatedAt]
             );
         } else if (collection === 'orders') {
             const o = item as unknown as DbOrder;
-            const { id, userId, status, total, createdAt, updatedAt, ...rest } = o;
+            const { id, userId, status, total, createdAt, updatedAt, templateId, templateName, ...rest } = o;
             await query(
-                'INSERT INTO orders (id, user_id, status, total, created_at, updated_at, data) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-                [id, userId, status, total, createdAt, updatedAt, JSON.stringify(rest)]
+                'INSERT INTO orders (id, user_id, status, total, created_at, updated_at, template_id, template_name, data) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+                [id, userId, status, total, createdAt, updatedAt, templateId || null, templateName || null, JSON.stringify(rest)]
             );
         } else if (collection === 'notifications') {
             const n = item as unknown as DbNotification;
@@ -513,6 +586,12 @@ export async function insertOne<T extends { id: string }>(
                 'INSERT INTO disputes (id, order_id, creator_id, category, description, status, resolution, admin_notes, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
                 [d.id, d.orderId, d.creatorId, d.category, d.description, d.status, d.resolution, d.adminNotes, d.createdAt, d.updatedAt]
             );
+        } else if (collection === 'audit_logs') {
+            const l = item as unknown as DbAuditLog;
+            await query(
+                'INSERT INTO audit_logs (id, user_id, user_email, action, resource_id, details, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+                [l.id, l.userId, l.userEmail, l.action, l.resourceId, l.details, l.timestamp]
+            );
         } else if (collection === 'dispute_evidence') {
             const e = item as unknown as DbDisputeEvidence;
             await query(
@@ -524,6 +603,12 @@ export async function insertOne<T extends { id: string }>(
             await query(
                 'INSERT INTO email_queue (id, recipient, subject, html_body, status, attempts, next_attempt_at, error, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
                 [j.id, j.recipient, j.subject, j.htmlBody, j.status, j.attempts, j.nextAttemptAt, j.error, j.createdAt]
+            );
+        } else if (collection === 'curated_designs') {
+            const d = item as unknown as DbCuratedDesign;
+            await query(
+                'INSERT INTO curated_designs (id, title, category, style_aesthetic, description, base_price_range, complexity_level, designer_skill_level, default_fabric, images, is_active, admin_notes, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)',
+                [d.id, d.title, d.category, d.style_aesthetic, d.description, d.base_price_range, d.complexity_level, d.designer_skill_level, d.default_fabric, JSON.stringify(d.images), d.is_active, d.admin_notes, d.created_at, d.updated_at]
             );
         }
         return item;
@@ -559,15 +644,15 @@ export async function updateOne<T extends { id: string }>(
         } else if (collection === 'designer_profiles') {
             const d = merged as unknown as DbDesignerProfile;
             await query(
-                'UPDATE designer_profiles SET specialties = $1, skill_level = $2, max_capacity = $3, current_load = $4, rating = $5, status = $6, bank_name = $7, account_number = $8, account_name = $9, workshop_address = $10, phone_number = $11, identification_url = $12, updated_at = $13 WHERE id = $14',
-                [JSON.stringify(d.specialties), d.skillLevel, d.maxCapacity, d.currentLoad, d.rating, d.status, d.bankName, d.accountNumber, d.accountName, d.workshopAddress, d.phoneNumber, d.identificationUrl, new Date().toISOString(), id]
+                'UPDATE designer_profiles SET specialties = $1, skill_level = $2, max_capacity = $3, current_load = $4, rating = $5, status = $6, bank_name = $7, account_number = $8, account_name = $9, workshop_address = $10, phone_number = $11, identification_url = $12, profile_photo = $13, portfolio_samples = $14, review_count = $15, updated_at = $16 WHERE id = $17',
+                [JSON.stringify(d.specialties), d.skillLevel, d.maxCapacity, d.currentLoad, d.rating, d.status, d.bankName, d.accountNumber, d.accountName, d.workshopAddress, d.phoneNumber, d.identificationUrl, d.profilePhoto, JSON.stringify(d.portfolioSamples || []), d.reviewCount || 0, new Date().toISOString(), id]
             );
         } else if (collection === 'orders') {
             const o = merged as unknown as DbOrder;
-            const { id: _id, userId, status, total, createdAt, updatedAt, ...rest } = o;
+            const { id: _id, userId, status, total, createdAt, updatedAt, templateId, templateName, ...rest } = o;
             await query(
-                'UPDATE orders SET status = $1, total = $2, updated_at = $3, data = $4 WHERE id = $5',
-                [status, total, new Date().toISOString(), JSON.stringify(rest), id]
+                'UPDATE orders SET status = $1, total = $2, updated_at = $3, template_id = $4, template_name = $5, data = $6 WHERE id = $7',
+                [status, total, new Date().toISOString(), templateId || null, templateName || null, JSON.stringify(rest), id]
             );
         } else if (collection === 'disputes') {
             const d = merged as unknown as DbDispute;
@@ -586,6 +671,18 @@ export async function updateOne<T extends { id: string }>(
             await query(
                 'UPDATE commission_payments SET status = $1, notes = $2, updated_at = $3 WHERE id = $4',
                 [c.status, c.notes, new Date().toISOString(), id]
+            );
+        } else if (collection === 'notifications') {
+            const n = merged as unknown as DbNotification;
+            await query(
+                'UPDATE notifications SET read = $1 WHERE id = $2',
+                [n.read, id]
+            );
+        } else if (collection === 'curated_designs') {
+            const d = merged as unknown as DbCuratedDesign;
+            await query(
+                'UPDATE curated_designs SET title = $1, category = $2, style_aesthetic = $3, description = $4, base_price_range = $5, complexity_level = $6, designer_skill_level = $7, default_fabric = $8, images = $9, is_active = $10, admin_notes = $11, updated_at = $12 WHERE id = $13',
+                [d.title, d.category, d.style_aesthetic, d.description, d.base_price_range, d.complexity_level, d.designer_skill_level, d.default_fabric, JSON.stringify(d.images), d.is_active, d.admin_notes, new Date().toISOString(), id]
             );
         }
 
@@ -617,6 +714,8 @@ export async function deleteOne<T extends { id: string }>(
             await query('DELETE FROM disputes WHERE id = $1', [id]);
         } else if (collection === 'dispute_evidence') {
             await query('DELETE FROM dispute_evidence WHERE id = $1', [id]);
+        } else if (collection === 'curated_designs') {
+            await query('DELETE FROM curated_designs WHERE id = $1', [id]);
         } else {
             return false;
         }

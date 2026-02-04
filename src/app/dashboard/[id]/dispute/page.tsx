@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { GlowButton } from "@/components/ui/glow-button";
 import { SimpleImageUpload } from "@/components/ui/simple-image-upload";
 import { ArrowLeft, AlertTriangle, Send, Upload } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
 
 interface DisputePageProps {
     params: Promise<{ id: string }>;
@@ -12,6 +13,7 @@ interface DisputePageProps {
 
 export default function DisputePage({ params }: DisputePageProps) {
     const router = useRouter();
+    const toast = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [step, setStep] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
@@ -58,12 +60,12 @@ export default function DisputePage({ params }: DisputePageProps) {
 
             if (!res.ok) throw new Error('Failed to submit dispute');
 
-            alert("Dispute submitted successfully. We will review it shortly.");
+            toast.success("Dispute submitted successfully. We will review it shortly.");
             // Reload to show the status or fetch again
-            window.location.reload();
+            setTimeout(() => window.location.reload(), 2000);
         } catch (error) {
             console.error(error);
-            alert("Failed to submit dispute.");
+            toast.error("Failed to submit dispute.");
         } finally {
             setIsSubmitting(false);
         }

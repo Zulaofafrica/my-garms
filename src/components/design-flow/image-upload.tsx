@@ -13,7 +13,7 @@ interface ImageUploadProps {
 
 export function ImageUpload({ name }: ImageUploadProps) {
     const { register, setValue, watch, formState: { errors } } = useFormContext();
-    const files = watch(name) as File[];
+    const files = watch(name) as (File | string)[];
 
     const onDrop = useCallback(
         (acceptedFiles: File[]) => {
@@ -76,7 +76,7 @@ export function ImageUpload({ name }: ImageUploadProps) {
                             className="relative aspect-square rounded-lg overflow-hidden bg-slate-800 border border-white/10 group"
                         >
                             <img
-                                src={URL.createObjectURL(file)}
+                                src={typeof file === 'string' ? file : URL.createObjectURL(file)}
                                 alt="preview"
                                 className="w-full h-full object-cover"
                             />

@@ -2,52 +2,64 @@
 @config "../../tailwind.config.mjs";
 
 :root {
-  /* Brand Colors */
-  --background: #f8f9fa;
-  --foreground: #1a1f2c;
+  /* Light Theme (Default) */
+  --background: #ffffff;
+  --foreground: #020617;
+  /* Slate 950 */
 
-  --primary: #1a1f2c;
-  /* Midnight Blue */
-  --primary-foreground: #ffffff;
+  --primary: #0f172a;
+  /* Slate 900 - Dark Button */
+  --primary-foreground: #f8fafc;
+  /* Slate 50 */
 
   --secondary: #ffffff;
-  --secondary-foreground: #1a1f2c;
+  /* White Button */
+  --secondary-foreground: #0f172a;
+  /* Slate 900 */
 
-  --accent: #4338ca;
-  /* Indigo/Electric Blue */
+  --accent: #6366f1;
+  /* Indigo 500 - Matches Gradient/Sparkles */
   --accent-foreground: #ffffff;
 
   --muted: #f1f5f9;
+  /* Slate 100 */
   --muted-foreground: #64748b;
+  /* Slate 500 */
+
+  --card: #ffffff;
+  --card-foreground: #020617;
 
   --border: #e2e8f0;
+  /* Slate 200 */
   --input: #e2e8f0;
-  --ring: #1a1f2c;
+  --ring: #0f172a;
 
   --radius: 0.5rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f172a;
-    --foreground: #f8fafc;
+.dark {
+  /* Dark Theme */
+  --background: #020617;
+  --foreground: #f8fafc;
 
-    --primary: #f8fafc;
-    --primary-foreground: #0f172a;
+  --primary: #818cf8;
+  --primary-foreground: #020617;
 
-    --secondary: #1e293b;
-    --secondary-foreground: #f8fafc;
+  --secondary: #1e293b;
+  --secondary-foreground: #f8fafc;
 
-    --accent: #6366f1;
-    --accent-foreground: #ffffff;
+  --accent: #4338ca;
+  --accent-foreground: #f8fafc;
 
-    --muted: #1e293b;
-    --muted-foreground: #94a3b8;
+  --muted: #0f172a;
+  --muted-foreground: #94a3b8;
 
-    --border: #1e293b;
-    --input: #1e293b;
-    --ring: #cbd5e1;
-  }
+  --card: #1e293b;
+  --card-foreground: #f8fafc;
+
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #818cf8;
 }
 
 @layer base {
@@ -55,7 +67,15 @@
     @apply border-border;
   }
 
+  html {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 100%;
+  }
+
   body {
     @apply bg-background text-foreground;
+    overflow: visible;
+    min-height: 100%;
   }
 }

@@ -2,8 +2,8 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { Menu, X, ShoppingBag, User as UserIcon, LogOut } from "lucide-react"
+import { useRouter, usePathname } from "next/navigation"
+import { Menu, X, User as UserIcon, LogOut } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
@@ -12,6 +12,7 @@ import { NotificationBadge } from "@/components/ui/notification-badge"
 export function Navbar() {
     const [isOpen, setIsOpen] = React.useState(false)
     const router = useRouter()
+    const pathname = usePathname()
     const { user, isLoading, logout } = useAuth();
 
     const handleLogout = async () => {
@@ -22,6 +23,9 @@ export function Navbar() {
             console.error("Logout failed:", error)
         }
     }
+
+    // Hide on admin pages
+    if (pathname?.startsWith('/admin')) return null;
 
     return (
         <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
@@ -60,12 +64,7 @@ export function Navbar() {
                     {/* Cart only for customers/guests? Leaving it for now, as designers might buy too? Or maybe hide it? 
                         User said "only Designer portal". I will hide cart for designers just in case.
                     */}
-                    {user?.role !== 'designer' && (
-                        <Button variant="ghost" size="icon">
-                            <ShoppingBag className="h-5 w-5" />
-                            <span className="sr-only">Cart</span>
-                        </Button>
-                    )}
+
 
                     {user && <NotificationBadge />}
 
@@ -94,11 +93,7 @@ export function Navbar() {
 
                 {/* Mobile Menu Toggle */}
                 <div className="flex items-center md:hidden">
-                    {user?.role !== 'designer' && (
-                        <Button variant="ghost" size="icon">
-                            <ShoppingBag className="h-5 w-5 mr-2" />
-                        </Button>
-                    )}
+
                     <Button
                         variant="ghost"
                         size="icon"

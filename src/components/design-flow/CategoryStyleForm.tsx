@@ -11,7 +11,7 @@ export const CATEGORIES = [
     { id: 'shirt', label: 'Shirt / Top', icon: '👕' },
     { id: 'native', label: 'Native Wear', icon: '👘' },
     { id: 'two-piece', label: 'Two-Piece Set', icon: '👚' },
-    { id: 'jacket', label: 'Jacket / Outerwear', icon: '🧥' },
+    { id: 'jacket', label: 'Pants / Jackets', icon: '🧥' },
 ];
 
 export const STYLES = [

@@ -18,7 +18,7 @@ export function CTASection() {
                     </h2>
                     <p className="text-primary-foreground/80 md:text-xl">
                         Join thousands of creators who are defining their own style.
-                        Start designing today and get 15% off your first order.
+                        Start designing today for amazing offers!
                     </p>
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                         <Link href="/design">

@@ -34,7 +34,7 @@ export function FemaleMeasurementsForm({ measurements, onChange }: FemaleMeasure
                             id="height"
                             type="number"
                             placeholder="165"
-                            value={measurements.height}
+                            value={measurements.height || ''}
                             onChange={(e) => handleChange('height', e.target.value)}
                         />
                         <span className="unit">cm</span>
@@ -49,7 +49,7 @@ export function FemaleMeasurementsForm({ measurements, onChange }: FemaleMeasure
                             id="weight"
                             type="number"
                             placeholder="60"
-                            value={measurements.weight}
+                            value={measurements.weight || ''}
                             onChange={(e) => handleChange('weight', e.target.value)}
                         />
                         <span className="unit">kg</span>
@@ -61,9 +61,10 @@ export function FemaleMeasurementsForm({ measurements, onChange }: FemaleMeasure
                     <label htmlFor="topsSize">Tops Size</label>
                     <select
                         id="topsSize"
-                        value={measurements.topsSize}
+                        value={measurements.topsSize || ''}
                         onChange={(e) => handleChange('topsSize', e.target.value)}
                     >
+                        <option value="">Select size</option>
                         {SIZES.map((size) => (
                             <option key={size} value={size}>{size}</option>
                         ))}
@@ -75,7 +76,7 @@ export function FemaleMeasurementsForm({ measurements, onChange }: FemaleMeasure
                     <label htmlFor="bottomSize">Bottom Size</label>
                     <select
                         id="bottomSize"
-                        value={measurements.bottomSize}
+                        value={measurements.bottomSize || ''}
                         onChange={(e) => handleChange('bottomSize', e.target.value)}
                     >
                         <option value="">Select size</option>
@@ -90,7 +91,7 @@ export function FemaleMeasurementsForm({ measurements, onChange }: FemaleMeasure
                     <label htmlFor="dressSize">Dress Size</label>
                     <select
                         id="dressSize"
-                        value={measurements.dressSize}
+                        value={measurements.dressSize || ''}
                         onChange={(e) => handleChange('dressSize', e.target.value)}
                     >
                         <option value="">Select size</option>
@@ -108,7 +109,7 @@ export function FemaleMeasurementsForm({ measurements, onChange }: FemaleMeasure
                             id="waistSize"
                             type="number"
                             placeholder="28"
-                            value={measurements.waistSize}
+                            value={measurements.waistSize || ''}
                             onChange={(e) => handleChange('waistSize', e.target.value)}
                         />
                         <span className="unit">in</span>
@@ -123,7 +124,7 @@ export function FemaleMeasurementsForm({ measurements, onChange }: FemaleMeasure
                             id="inseam"
                             type="number"
                             placeholder="30"
-                            value={measurements.inseam}
+                            value={measurements.inseam || ''}
                             onChange={(e) => handleChange('inseam', e.target.value)}
                         />
                         <span className="unit">in</span>
@@ -169,7 +170,7 @@ export function FemaleMeasurementsForm({ measurements, onChange }: FemaleMeasure
                             id="shoeSize"
                             type="number"
                             placeholder="8"
-                            value={measurements.shoeSize}
+                            value={measurements.shoeSize || ''}
                             onChange={(e) => handleChange('shoeSize', e.target.value)}
                         />
                         <span className="unit">US</span>

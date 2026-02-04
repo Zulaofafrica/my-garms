@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
+import { useToast } from '@/components/ui/toast';
 
 interface DisputeDetails {
     id: string;
@@ -21,6 +22,7 @@ interface PageProps {
 
 export default function DisputeResolutionPage({ params }: PageProps) {
     const router = useRouter();
+    const toast = useToast();
     const [dispute, setDispute] = useState<DisputeDetails | null>(null);
     const [resolutionText, setResolutionText] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,7 +58,7 @@ export default function DisputeResolutionPage({ params }: PageProps) {
 
     const handleResolve = async (action: 'RESOLVE' | 'DISMISS') => {
         if (!resolutionText && action === 'RESOLVE') {
-            alert("Resolution details required.");
+            toast.warning("Resolution details required.");
             return;
         }
 
@@ -75,10 +77,10 @@ export default function DisputeResolutionPage({ params }: PageProps) {
 
             if (!res.ok) throw new Error('Failed');
 
-            alert("Dispute resolved.");
+            toast.success("Dispute resolved.");
             router.push('/admin/disputes');
         } catch (error) {
-            alert("Failed to resolve.");
+            toast.error("Failed to resolve.");
         } finally {
             setIsSubmitting(false);
         }

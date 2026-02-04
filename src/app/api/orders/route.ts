@@ -39,10 +39,10 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { profileId, templateId, templateName, fabricId, fabricName, total, images, category, style, color, notes } = body;
+        const { profileId, templateId, templateName, fabricId, fabricName, total, images, category, style, color, notes, urgency, fabricSource, budgetRange, complexity } = body;
 
         // Validate required fields
-        if (!profileId || !templateId || !fabricId) {
+        if (!profileId || !fabricId) {
             return NextResponse.json(
                 { error: 'Missing required order details' },
                 { status: 400 }
@@ -66,6 +66,11 @@ export async function POST(request: NextRequest) {
             style,
             color,
             notes,
+            // New fields
+            urgency,
+            fabricSource,
+            budgetRange,
+            complexity,
             paymentStatus: 'pending',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
@@ -73,23 +78,24 @@ export async function POST(request: NextRequest) {
 
         await insertOne('orders', order);
 
-        // Trigger Matching
-        try {
-            const { MatchingService } = await import('@/lib/matching-service');
-            await MatchingService.shortlistDesigners(order.id);
-        } catch (e) { console.error("Matching error:", e); }
+        // Matching is now deferred to the Selection Step
+        // try {
+        //     const { MatchingService } = await import('@/lib/matching-service');
+        //     await MatchingService.shortlistDesigners(order.id);
+        // } catch (e) { console.error("Matching error:", e); }
 
+        // Notify User (Confirmation)
         // Notify User (Confirmation)
         try {
             const { NotificationService } = await import('@/lib/notification-service');
             await NotificationService.notify(
                 session.userId,
                 'system',
-                `We received your request for "${order.templateName}". We are matching you with a designer now!`,
+                `Request received! Please proceed to select how you want your designer assigned.`,
                 {
-                    to: 'customer@example.com', // Fetch user email in real app
-                    subject: 'Order Received - MyGarms',
-                    htmlBody: `<p>Thanks for your order #${order.id}. We are finding a designer for you.</p>`
+                    to: 'customer@example.com',
+                    subject: 'Order Received - Action Required',
+                    htmlBody: `<p>Thanks for your order #${order.id}. Please continue to select your designer.</p>`
                 }
             );
         } catch (e) { console.error("Notification error:", e); }

@@ -1,6 +1,12 @@
+"use client"
+
 import Link from "next/link"
 
+import { usePathname } from "next/navigation"
+
 export function Footer() {
+    const pathname = usePathname();
+    if (pathname?.startsWith('/admin')) return null;
     return (
         <footer className="w-full border-t bg-background py-6 md:py-12">
             <div className="container mx-auto grid gap-8 px-4 md:px-6 lg:grid-cols-4">
@@ -37,11 +43,14 @@ export function Footer() {
                     </Link>
                 </div>
                 <div className="grid gap-2">
-                    <h3 className="text-sm font-semibold">Legal</h3>
-                    <Link href="#" className="text-sm text-muted-foreground hover:underline">
+                    <h3 className="text-sm font-semibold">Company</h3>
+                    <Link href="/about" className="text-sm text-muted-foreground hover:underline">
+                        About Us
+                    </Link>
+                    <Link href="/privacy" className="text-sm text-muted-foreground hover:underline">
                         Privacy Policy
                     </Link>
-                    <Link href="#" className="text-sm text-muted-foreground hover:underline">
+                    <Link href="/terms" className="text-sm text-muted-foreground hover:underline">
                         Terms of Service
                     </Link>
                 </div>

@@ -37,7 +37,7 @@ export default function NotificationsPage() {
                     <Bell size={24} />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+                    <h1 className="text-2xl font-bold bg-clip-text text-accent bg-gradient-to-r from-white to-slate-400">
                         Notifications
                     </h1>
                     <p className="text-slate-400">Stay updated on your orders and requests.</p>
@@ -54,16 +54,16 @@ export default function NotificationsPage() {
                         <div
                             key={n.id}
                             className={`relative p-5 rounded-xl border transition-all ${!n.read
-                                    ? 'bg-slate-900 border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.1)]'
-                                    : 'bg-black/20 border-white/5 opacity-70 hover:opacity-100'
+                                ? 'bg-slate-900 border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.1)]'
+                                : 'bg-slate-900/20 border-slate-800 opacity-80 hover:opacity-100'
                                 }`}
                         >
                             <div className="flex justify-between items-start gap-4">
                                 <div>
                                     <div className="flex items-center gap-2 mb-1">
-                                        <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase tracking-wider ${n.type === 'order_update' ? 'bg-emerald-500/10 text-emerald-400' :
-                                                n.type === 'request_received' ? 'bg-indigo-500/10 text-indigo-400' :
-                                                    'bg-slate-700 text-slate-300'
+                                        <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase tracking-wider ${n.type === 'order_update' ? 'bg-emerald-500 text-emerald-100' :
+                                            n.type === 'request_received' ? 'bg-indigo-500/10 text-indigo-400' :
+                                                'bg-slate-700 text-slate-300'
                                             }`}>
                                             {n.type.replace('_', ' ')}
                                         </span>

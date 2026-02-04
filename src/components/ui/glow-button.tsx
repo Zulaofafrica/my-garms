@@ -16,8 +16,9 @@ export function GlowButton({
     className,
     variant = "primary",
     size = "default",
+    isLoading,
     ...props
-}: GlowButtonProps) {
+}: GlowButtonProps & { isLoading?: boolean }) {
     const sizeClasses = {
         default: "h-10 px-4 py-2",
         sm: "h-9 rounded-md px-3",

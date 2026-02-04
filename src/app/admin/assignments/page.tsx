@@ -4,13 +4,15 @@
 import { useState, useEffect } from "react";
 import { Order } from "@/lib/api-client";
 import { Users, AlertTriangle, CheckCircle, Clock } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
+import { useConfirm } from "@/components/ui/confirm-modal";
 
 // Types for Admin View
 interface AdminOrder extends Order {
     assignedDesignerName: string | null;
     candidateCount: number;
-    assignmentStatus?: string;
 }
+
 
 interface DesignerOption {
     id: string; // userId
@@ -24,6 +26,8 @@ export default function AdminAssignmentsPage() {
     const [orders, setOrders] = useState<AdminOrder[]>([]);
     const [designers, setDesigners] = useState<DesignerOption[]>([]);
     const [loading, setLoading] = useState(true);
+    const toast = useToast();
+    const { confirm } = useConfirm();
 
     useEffect(() => {
         loadData();
@@ -43,7 +47,16 @@ export default function AdminAssignmentsPage() {
     };
 
     const handleAssign = async (orderId: string, designerUserId: string) => {
-        if (!designerUserId || !confirm(`Assign order ${orderId.slice(0, 8)} to this designer?`)) return;
+        if (!designerUserId) return;
+
+        const confirmed = await confirm({
+            title: "Assign Designer",
+            message: `Assign order ${orderId.slice(0, 8)} to this designer?`,
+            type: "info",
+            confirmText: "Assign",
+            cancelText: "Cancel"
+        });
+        if (!confirmed) return;
 
         try {
             const res = await fetch('/api/admin/assign', {
@@ -52,13 +65,13 @@ export default function AdminAssignmentsPage() {
                 body: JSON.stringify({ orderId, designerUserId })
             });
             if (res.ok) {
-                alert("Assigned!");
+                toast.success("Designer assigned successfully!");
                 loadData(); // Reload
             } else {
-                alert("Failed to assign");
+                toast.error("Failed to assign");
             }
         } catch (e) {
-            alert("Error assigning");
+            toast.error("Error assigning");
         }
     };
 

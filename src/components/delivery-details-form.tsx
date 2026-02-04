@@ -4,6 +4,7 @@ import { useState } from "react";
 import { GlowButton } from "@/components/ui/glow-button";
 import { MapPin, Phone, User, Truck } from "lucide-react";
 import { ordersApi } from "@/lib/api-client";
+import { useToast } from "@/components/ui/toast";
 
 interface DeliveryDetailsFormProps {
     orderId: string;
@@ -11,6 +12,7 @@ interface DeliveryDetailsFormProps {
 }
 
 export function DeliveryDetailsForm({ orderId, onSuccess }: DeliveryDetailsFormProps) {
+    const toast = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
         fullName: "",
@@ -29,8 +31,9 @@ export function DeliveryDetailsForm({ orderId, onSuccess }: DeliveryDetailsFormP
         try {
             const { order } = await ordersApi.submitDeliveryDetails(orderId, formData);
             onSuccess(order.deliveryDetails);
+            toast.success("Delivery details saved!");
         } catch (error) {
-            alert("Failed to save delivery details. Please try again.");
+            toast.error("Failed to save delivery details. Please try again.");
             console.error(error);
         } finally {
             setIsLoading(false);

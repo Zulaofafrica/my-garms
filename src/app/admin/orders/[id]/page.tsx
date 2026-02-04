@@ -5,10 +5,14 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, User, ShoppingBag, Ruler, Clock, Calendar, AlertTriangle, CheckCircle, Shield } from 'lucide-react';
 import { adminApi } from '@/lib/api-client';
+import { useToast } from '@/components/ui/toast';
+import { useConfirm } from '@/components/ui/confirm-modal';
 
 export default function OrderDetailsPage() {
     const params = useParams();
     const router = useRouter();
+    const toast = useToast();
+    const { confirm } = useConfirm();
     const [data, setData] = useState<any | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isAssigning, setIsAssigning] = useState(false);
@@ -25,20 +29,28 @@ export default function OrderDetailsPage() {
             setData(json);
         } catch (err) {
             console.error(err);
-            alert('Failed to load order details');
+            toast.error('Failed to load order details');
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleAssign = async (designerId: string) => {
-        if (!confirm('Assign this designer to the order?')) return;
+        const confirmed = await confirm({
+            title: "Assign Designer",
+            message: "Assign this designer to the order?",
+            type: "info",
+            confirmText: "Assign",
+            cancelText: "Cancel"
+        });
+        if (!confirmed) return;
+
         setIsAssigning(true);
         try {
             await adminApi.assignDesigner(params.id as string, designerId);
             fetchDetails(); // Reload to see updates
         } catch (err) {
-            alert('Failed to assign designer');
+            toast.error('Failed to assign designer');
         } finally {
             setIsAssigning(false);
         }

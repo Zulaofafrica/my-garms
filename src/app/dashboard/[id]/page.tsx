@@ -6,18 +6,20 @@ import {
     ArrowLeft,
     FileText,
     Palette,
-    DollarSign,
+    Banknote,
     CheckCircle,
     Clock,
     AlertCircle,
     MessageSquare,
     Image as ImageIcon,
-    Package
+    Package,
+    Star
 } from "lucide-react";
 import { ordersApi, Order } from "@/lib/api-client";
 import { GlowButton } from "@/components/ui/glow-button";
 import { SimpleImageUpload } from "@/components/ui/simple-image-upload";
 import { DeliveryDetailsForm } from "@/components/delivery-details-form";
+import { useToast } from "@/components/ui/toast";
 
 interface CustomerOrderDetailPageProps {
     params: Promise<{ id: string }>;
@@ -25,6 +27,7 @@ interface CustomerOrderDetailPageProps {
 
 export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailPageProps) {
     const router = useRouter();
+    const toast = useToast();
     const [order, setOrder] = useState<Order | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isApproving, setIsApproving] = useState(false);
@@ -41,6 +44,11 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
     const [isSendingReply, setIsSendingReply] = useState(false);
     const [paymentDetails, setPaymentDetails] = useState<{ bankName: string; accountNumber: string; accountName: string } | null>(null);
 
+    // Rating State
+    const [rating, setRating] = useState(0);
+    const [review, setReview] = useState("");
+    const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+
     const handleSendReply = async () => {
         if (!order || !replyComment.trim()) return;
 
@@ -51,7 +59,7 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
             setReplyComment("");
         } catch (err) {
             console.error("Reply error:", err);
-            alert("Failed to send reply");
+            toast.error("Failed to send reply");
         } finally {
             setIsSendingReply(false);
         }
@@ -93,10 +101,10 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
         try {
             const data = await ordersApi.approve(order.id);
             setOrder(data.order);
-            alert("Design approved! Please proceed to payment.");
+            toast.success("Design approved! Please proceed to payment.");
         } catch (err) {
             console.error("Approval error:", err);
-            alert("Failed to approve order.");
+            toast.error("Failed to approve order.");
         } finally {
             setIsApproving(false);
         }
@@ -113,12 +121,27 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
                 proofUrl
             });
             setOrder(data.order);
-            alert("Payment proof submitted! We will verify shortly.");
+            toast.success("Payment proof submitted! We will verify shortly.");
         } catch (err) {
             console.error("Payment error:", err);
-            alert("Failed to submit payment.");
+            toast.error("Failed to submit payment.");
         } finally {
             setIsSubmittingPayment(false);
+        }
+    };
+
+    const handleRateDesigner = async () => {
+        if (!order || rating === 0) return;
+        setIsSubmittingRating(true);
+        try {
+            const data = await ordersApi.submitRating(order.id, { rating, review });
+            setOrder(data.order);
+            toast.success("Thank you for your feedback!");
+        } catch (err) {
+            console.error("Rating error:", err);
+            toast.error("Failed to submit rating.");
+        } finally {
+            setIsSubmittingRating(false);
         }
     };
 
@@ -291,7 +314,7 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
                     <div className="space-y-6">
                         <div className="bg-gradient-to-br from-indigo-900/50 to-purple-900/50 border border-indigo-500/30 rounded-2xl p-6 sticky top-24">
                             <div className="flex items-center gap-2 mb-4 text-indigo-300">
-                                <DollarSign className="w-5 h-5" />
+                                <Banknote className="w-5 h-5" />
                                 <h2 className="font-semibold">Estimated Price</h2>
                             </div>
 
@@ -535,7 +558,7 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
                                                                     // We reuse the payment submit logic but set type to 'full' implicitely
                                                                     setPaymentType('full');
                                                                     setProofUrl(url);
-                                                                    alert("Proof uploaded! Use the button below to submit.");
+                                                                    toast.info("Proof uploaded! Use the button below to submit.");
                                                                 }}
                                                                 value={proofUrl}
                                                             />
@@ -557,9 +580,62 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
                                     </div>
                                 )}
 
+                                {/* Rating Section */}
+                                {order.status === 'delivered' && (
+                                    <div className="mt-6 pt-6 border-t border-white/10">
+                                        {order.rating ? (
+                                            <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-xl p-4 text-center">
+                                                <h3 className="text-white font-bold mb-2">You Rated This Designer</h3>
+                                                <div className="flex justify-center gap-1 mb-2">
+                                                    {[1, 2, 3, 4, 5].map((star) => (
+                                                        <Star
+                                                            key={star}
+                                                            className={`w-5 h-5 ${star <= (order.rating || 0) ? 'text-amber-400 fill-current' : 'text-slate-600'}`}
+                                                        />
+                                                    ))}
+                                                </div>
+                                                <p className="text-sm text-slate-300 italic">"{order.review}"</p>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                                                <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+                                                    <Star className="w-5 h-5 text-amber-400" /> Rate Your Experience
+                                                </h3>
+                                                <div className="flex justify-center gap-2 mb-4">
+                                                    {[1, 2, 3, 4, 5].map((star) => (
+                                                        <button
+                                                            key={star}
+                                                            onClick={() => setRating(star)}
+                                                            className="focus:outline-none transition-transform hover:scale-110"
+                                                        >
+                                                            <Star
+                                                                className={`w-8 h-8 ${star <= rating ? 'text-amber-400 fill-current' : 'text-slate-600'}`}
+                                                            />
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                <textarea
+                                                    className="w-full bg-slate-900 border border-white/10 rounded-lg p-3 text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 text-sm mb-4"
+                                                    placeholder="Write a review (optional)..."
+                                                    rows={3}
+                                                    value={review}
+                                                    onChange={(e) => setReview(e.target.value)}
+                                                />
+                                                <GlowButton
+                                                    onClick={handleRateDesigner}
+                                                    disabled={rating === 0 || isSubmittingRating}
+                                                    className="w-full"
+                                                >
+                                                    {isSubmittingRating ? "Submitting..." : "Submit Review"}
+                                                </GlowButton>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 {/* Dispute / Report Issue */}
                                 {(order.status === 'confirmed' || order.status === 'sewing' || order.status === 'shipping' || order.status === 'delivered') && (
-                                    <div className="mt-6 pt-6 border-t border-white/10">
+                                    <div className="mt-4 pt-4 border-t border-white/10">
                                         <button
                                             onClick={() => router.push(`/dashboard/${order.id}/dispute`)}
                                             className="w-full flex items-center justify-center gap-2 text-sm text-red-400 hover:text-red-300 transition-colors py-2"
