@@ -71,7 +71,8 @@ export async function PUT(request: NextRequest) {
                 phoneNumber,
                 identificationUrl,
                 profilePhoto,
-                portfolioSamples: portfolioSamples || []
+                portfolioSamples: portfolioSamples || [],
+                reviewCount: 0
             };
             await insertOne('designer_profiles', profile);
         } else {

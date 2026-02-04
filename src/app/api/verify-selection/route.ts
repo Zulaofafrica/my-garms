@@ -45,13 +45,13 @@ export async function GET() {
         const autoRes = await MatchingService.shortlistDesigners(orderId);
 
         // Reset for Manual
-        await updateOne('orders', orderId, { assignmentStatus: 'open', shortlistedDesignerIds: [] });
+        await updateOne<DbOrder>('orders', orderId, { assignmentStatus: 'open', shortlistedDesignerIds: [] });
 
         // 4. Test Manual Assign (Pick first match if exists)
         let manualRes = false;
         if (matchCount > 0) {
             const designerId = matches[0].userId;
-            await updateOne('orders', orderId, {
+            await updateOne<DbOrder>('orders', orderId, {
                 assignmentStatus: 'shortlisted',
                 shortlistedDesignerIds: [designerId]
             });

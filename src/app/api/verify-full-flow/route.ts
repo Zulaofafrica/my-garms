@@ -26,6 +26,8 @@ export async function GET() {
             firstName: 'Test',
             lastName: 'Designer',
             role: 'designer',
+            status: 'active',
+            isVerified: true,
             createdAt: new Date().toISOString()
         };
         await insertOne('users', designerUser);
@@ -39,6 +41,8 @@ export async function GET() {
             firstName: 'Test',
             lastName: 'Customer',
             role: 'customer',
+            status: 'active',
+            isVerified: true,
             createdAt: new Date().toISOString()
         };
         await insertOne('users', customerUser);
@@ -57,6 +61,7 @@ export async function GET() {
             currentLoad: 0,
             rating: 5,
             status: 'available',
+            reviewCount: 0,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };

@@ -19,6 +19,8 @@ export async function GET() {
             firstName: 'Diag',
             lastName: 'User',
             role: 'designer',
+            status: 'active',
+            isVerified: true,
             createdAt: new Date().toISOString()
         };
 

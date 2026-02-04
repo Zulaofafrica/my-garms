@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { updateOne } from '@/lib/db';
+import { updateOne, DbUser } from '@/lib/db';
 import { getCurrentUser } from '@/lib/session';
 
 export async function POST(request: Request) {
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
         }
 
         // Promote user to admin
-        await updateOne('users', user.id, { role: 'admin' });
+        await updateOne<DbUser>('users', user.id, { role: 'admin' });
 
         return NextResponse.json({ success: true, message: 'Access granted. Welcome, Admin.' });
 
