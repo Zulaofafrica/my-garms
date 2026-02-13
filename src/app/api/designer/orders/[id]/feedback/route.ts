@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
-import { findById, updateOne, generateId, DbUser, DbOrder, FeedbackEntry } from '@/lib/db';
+import { findById, updateOne, generateId, DbUser, DbOrder, FeedbackEntry, logAudit } from '@/lib/db';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -42,6 +42,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         let newPrice = order.price;
 
         if (action === 'set_price') {
+            // Check if payment has been made or initiated
+            if (order.paymentStatus && order.paymentStatus !== 'pending') {
+                return NextResponse.json({ error: 'Cannot change price after payment has been initiated or made' }, { status: 400 });
+            }
+
             if (price === undefined) {
                 return NextResponse.json({ error: 'Price is required for set_price action' }, { status: 400 });
             }
@@ -76,6 +81,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         };
 
         const updatedOrder = await updateOne<DbOrder>('orders', id, updates);
+
+        // Audit Log
+        await logAudit(user.id, `order.feedback.${action}`, `Designer submitted feedback: ${action}`, id);
 
         return NextResponse.json({
             order: updatedOrder,

@@ -25,6 +25,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
         await MatchingService.declineOrder(id, user.id);
 
+        await import('@/lib/db').then(m => m.logAudit(user.id, 'designer.request_decline', `Designer declined order #${id}`, id));
+
         return NextResponse.json({
             success: true,
             message: 'Request declined'

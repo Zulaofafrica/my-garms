@@ -25,6 +25,9 @@ interface CustomerOrderDetailPageProps {
     params: Promise<{ id: string }>;
 }
 
+import { ChatInterface } from "@/components/feedback/ChatInterface";
+import { authApi } from "@/lib/api-client";
+
 export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailPageProps) {
     const router = useRouter();
     const toast = useToast();
@@ -32,6 +35,7 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
     const [isLoading, setIsLoading] = useState(true);
     const [isApproving, setIsApproving] = useState(false);
     const [error, setError] = useState("");
+    const [currentUser, setCurrentUser] = useState<any>(null);
 
     // Payment State
     const [paymentType, setPaymentType] = useState<'full' | 'partial'>('full');
@@ -69,19 +73,15 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
         const loadOrder = async () => {
             try {
                 const { id } = await params;
-                const data = await ordersApi.list();
-                const foundOrder = data.orders.find(o => o.id === id);
+                // Use the single order fetch endpoint for better performance and fresh data
+                const { order: foundOrder } = await ordersApi.get(id);
+                setOrder(foundOrder);
 
-                if (!foundOrder) {
-                    setError("Order not found");
-                } else {
-                    setOrder(foundOrder);
-                }
-                if (foundOrder && (foundOrder.status === 'confirmed' || foundOrder.status === 'sewing' || foundOrder.status === 'shipping')) {
-                    // Fetch payment details if ready for payment
-                    ordersApi.getPaymentDetails(foundOrder.id)
-                        .then(details => setPaymentDetails(details))
-                        .catch(err => console.error("Failed to load payment details", err));
+                try {
+                    const me = await authApi.me();
+                    setCurrentUser(me.user);
+                } catch (e) {
+                    console.error("Failed to load user", e);
                 }
             } catch (err) {
                 console.error("Order load error:", err);
@@ -93,6 +93,16 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
 
         loadOrder();
     }, [params]);
+
+    // Separate effect to load payment details when status allows
+    useEffect(() => {
+        if (order && (order.status === 'confirmed' || order.status === 'sewing' || order.status === 'shipping') && !paymentDetails) {
+            ordersApi.getPaymentDetails(order.id)
+                .then(details => setPaymentDetails(details))
+                .catch(err => console.error("Failed to load payment details", err));
+        }
+    }, [order?.status, order?.id, paymentDetails]); // Include paymentDetails to avoid loop if it stays null on error, but simple check is okay
+
 
     const handleApprove = async () => {
         if (!order) return;
@@ -251,62 +261,33 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
                             <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                                 <MessageSquare className="w-5 h-5" /> Designer Feedback
                             </h2>
-                            <div className="space-y-6">
-                                {order.feedbackLog && order.feedbackLog.length > 0 ? (
-                                    order.feedbackLog.map((log) => (
-                                        <div key={log.id} className="border-b border-white/5 last:border-0 pb-6 last:pb-0">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <span className="text-sm font-semibold text-white">{log.userName}</span>
-                                                <span className="text-xs text-muted-foreground">
-                                                    {new Date(log.timestamp).toLocaleDateString()}
-                                                </span>
-                                            </div>
-                                            <div className="mb-2">
-                                                <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded-full
-                                                    ${log.action === 'approve' ? 'bg-green-500/20 text-green-400' :
-                                                        log.action === 'set_price' ? 'bg-blue-500/20 text-blue-400' :
-                                                            log.action === 'request_change' ? 'bg-red-500/20 text-red-400' :
-                                                                log.action === 'reply' ? 'bg-purple-500/20 text-purple-400' :
-                                                                    'bg-indigo-500/20 text-indigo-400'}`}>
-                                                    {log.action.replace('_', ' ')}
-                                                </span>
-                                            </div>
-                                            <p className="text-white/80 text-sm leading-relaxed">{log.comment}</p>
-                                            {log.attachmentUrl && (
-                                                <div className="mt-3 w-40 h-40 rounded-lg overflow-hidden border border-white/10">
-                                                    <img src={log.attachmentUrl} alt="Feedback attachment" className="w-full h-full object-cover" />
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))
-                                ) : (
-                                    <p className="text-muted-foreground text-center italic py-4">
-                                        No feedback from the designer yet.
-                                    </p>
-                                )}
+                            <ChatInterface
+                                currentUserId={currentUser?.id || ''}
+                                feedbackLog={order.feedbackLog || []}
+                                isSending={isSendingReply}
+                                onSendMessage={async (msg, attachment) => {
+                                    setReplyComment(msg);
+                                    // We need to handle state update. 
+                                    // The ChatInterface handles clearing its own input, but we need to actually send the data.
+                                    // And also support attachment if we add support for it in submitReply API.
+                                    // For now, let's just send the comment.
 
-                                {/* Reply Section */}
-                                <div className="pt-4 border-t border-white/10">
-                                    <h3 className="text-sm font-semibold text-white mb-2">Send a Reply</h3>
-                                    <textarea
-                                        className="w-full bg-slate-900 border border-white/10 rounded-lg p-3 text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 transition-colors text-sm min-h-[100px]"
-                                        placeholder="Type your reply here..."
-                                        value={replyComment}
-                                        onChange={(e) => setReplyComment(e.target.value)}
-                                        disabled={isSendingReply}
-                                    />
-                                    <div className="mt-2 flex justify-end">
-                                        <GlowButton
-                                            variant="primary"
-                                            size="sm"
-                                            disabled={!replyComment.trim() || isSendingReply}
-                                            onClick={handleSendReply}
-                                        >
-                                            {isSendingReply ? "Sending..." : "Send Reply"}
-                                        </GlowButton>
-                                    </div>
-                                </div>
-                            </div>
+                                    if (!order) return;
+                                    setIsSendingReply(true);
+                                    try {
+                                        const data = await ordersApi.submitReply(order.id, { comment: msg, attachmentUrl: attachment });
+                                        setOrder(data.order);
+                                        setReplyComment("");
+                                    } catch (err) {
+                                        console.error("Reply error:", err);
+                                        toast.error("Failed to send reply");
+                                    } finally {
+                                        setIsSendingReply(false);
+                                    }
+                                }}
+                                title="Designer Feedback & Chat"
+                                placeholder="Type a reply..."
+                            />
                         </div>
                     </div>
 

@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
-import { findById, findByField, updateOne, insertOne, DbUser, DbDesignerProfile, generateId } from '@/lib/db';
+import { findById, findByField, updateOne, insertOne, DbUser, DbDesignerProfile, generateId, logAudit } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
     try {
@@ -93,6 +93,9 @@ export async function PUT(request: NextRequest) {
         }
 
         const updatedProfile = await findByField<DbDesignerProfile>('designer_profiles', 'userId', user.id);
+
+        // Audit Log
+        await logAudit(user.id, 'designer.settings_update', 'Designer updated profile settings', user.id);
 
         return NextResponse.json({ success: true, profile: updatedProfile });
     } catch (error) {

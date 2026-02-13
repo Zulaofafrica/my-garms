@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { findByField, insertOne, DbUser, DbProfile, DbOrder, generateId } from "@/lib/db";
+import { findByField, insertOne, DbUser, DbProfile, DbOrder, generateId, generateOrderId } from "@/lib/db";
 import { setSession } from "@/lib/session";
 import bcrypt from 'bcryptjs';
 
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
         await insertOne('profiles', profile);
 
         // 4. Create Order
-        const orderId = generateId();
+        const orderId = generateOrderId();
         const order: DbOrder = {
             id: orderId,
             userId: userId,

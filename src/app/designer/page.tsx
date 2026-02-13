@@ -249,14 +249,14 @@ export default function DesignerDashboard() {
                 </div>
             </header>
 
-            <div className="mb-8 p-6 rounded-xl bg-indigo-900 border border-indigo-500/20 flex items-center justify-between">
-                <div>
+            <div className="mb-8 p-6 rounded-xl bg-indigo-900 border border-indigo-500/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div className="mb-4 md:mb-0">
                     <h3 className="text-xl font-bold text-white mb-2">New Design Matches Available!</h3>
                     <p className="text-indigo-200">There are new customer requests waiting for your review.</p>
                 </div>
                 <Link
                     href="/designer/requests"
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 transition-all shadow-lg shadow-indigo-500/20"
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-500/20 w-full md:w-auto"
                 >
                     <ClipboardList size={20} />
                     View New Requests

@@ -25,6 +25,8 @@ interface OrderDetailPageProps {
     params: Promise<{ id: string }>;
 }
 
+import { ChatInterface } from "@/components/feedback/ChatInterface";
+
 export default function OrderDetailPage({ params }: OrderDetailPageProps) {
     const router = useRouter();
     const toast = useToast();
@@ -35,12 +37,14 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
+    const [currentUser, setCurrentUser] = useState<any>(null);
 
     useEffect(() => {
         const loadOrderData = async () => {
             try {
                 const { id } = await params;
                 const me = await authApi.me();
+                setCurrentUser(me.user);
                 if (me.user.role !== 'designer') {
                     router.push("/profile");
                     return;
@@ -55,11 +59,18 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                 }
                 setOrder(foundOrder);
 
-                try {
-                    const profileData = await designerApi.getProfile(foundOrder.profileId);
-                    setProfile(profileData.profile);
-                } catch (pErr) {
-                    console.error("Profile fetch error:", pErr);
+                if (foundOrder.profileId) {
+                    try {
+                        const profileData = await designerApi.getProfile(foundOrder.profileId);
+                        setProfile(profileData.profile);
+                    } catch (pErr: any) {
+                        // Use warn for 404s to avoid triggering Next.js error overlay
+                        if (pErr.message === 'Profile not found' || pErr.message?.includes('not found')) {
+                            console.warn("Profile missing for order:", foundOrder.id);
+                        } else {
+                            console.error("Profile fetch error:", pErr);
+                        }
+                    }
                 }
 
             } catch (err) {
@@ -138,11 +149,14 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
         }
     };
 
-    const handleAction = async (action: 'suggest_edit' | 'request_change' | 'set_price') => {
+    const handleAction = async (action: 'suggest_edit' | 'request_change' | 'set_price' | 'reply', breakdownOverride?: any, messageOverride?: string, attachmentOverride?: string) => {
         if (!order) return;
 
+        // Use override if provided (for Curated/Locked orders), otherwise use state
+        const currentBreakdown = breakdownOverride || breakdown;
+
         if (action === 'set_price') {
-            const totalPrice = breakdown.fabric + breakdown.labor + breakdown.customization + breakdown.delivery;
+            const totalPrice = currentBreakdown.fabric + currentBreakdown.labor + currentBreakdown.customization + currentBreakdown.delivery;
             if (totalPrice <= 5000) { // Should be more than just delivery
                 toast.warning("Please enter valid costs for fabric/labor.");
                 return;
@@ -156,21 +170,22 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
 
         setIsSubmitting(true);
         try {
-            const totalPrice = breakdown.fabric + breakdown.labor + breakdown.customization + breakdown.delivery;
+            const currentBreakdown = breakdownOverride || breakdown;
+            const totalPrice = currentBreakdown.fabric + currentBreakdown.labor + currentBreakdown.customization + currentBreakdown.delivery;
 
             const payload: any = {
                 action,
-                comment: comment || (action === 'set_price' ? `Price Quote: ₦${totalPrice.toLocaleString()} (Includes Delivery)` : "")
+                comment: messageOverride || comment || (action === 'set_price' ? `Price Quote: ₦${totalPrice.toLocaleString()} (Includes Delivery)` : "")
             };
 
             if (action === 'set_price') {
                 payload.price = totalPrice;
-                payload.priceBreakdown = breakdown;
+                payload.priceBreakdown = currentBreakdown;
                 if (endDate) payload.estimatedCompletionDate = endDate;
             }
 
-            if (attachmentUrl) {
-                payload.attachmentUrl = attachmentUrl;
+            if (attachmentOverride || attachmentUrl) {
+                payload.attachmentUrl = attachmentOverride || attachmentUrl;
             }
 
             const data = await designerApi.submitFeedback(order.id, payload);
@@ -289,12 +304,28 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                         <h2 className={styles.cardTitle}><Maximize2 size={20} /> Measurements</h2>
                         {profile ? (
                             <div className={styles.measurementGrid}>
-                                {Object.entries(profile.measurements).map(([key, value]) => (
-                                    <div key={key} className={styles.measurementItem}>
-                                        <span className={styles.label}>{key.replace('_', ' ')}</span>
-                                        <span className={styles.value}>{value} cm</span>
-                                    </div>
-                                ))}
+                                {Object.entries(profile.measurements).map(([key, value]) => {
+                                    if (!value) return null;
+
+                                    const getUnit = (k: string) => {
+                                        if (k === 'weight') return 'kg';
+                                        if (k === 'shoeSize') return 'EU';
+                                        if (k === 'height') return 'cm';
+                                        if (['shirtSize', 'topsSize', 'bottomSize', 'dressSize', 'blazerSize', 'braSize'].includes(k)) return '';
+                                        return 'in'; // Default for waist, inseam, etc.
+                                    };
+
+                                    return (
+                                        <div key={key} className={styles.measurementItem}>
+                                            <span className={styles.label}>
+                                                {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                            </span>
+                                            <span className={styles.value}>
+                                                {value} <span style={{ fontSize: '0.8em', color: 'var(--muted-foreground)', fontWeight: 'normal' }}>{getUnit(key)}</span>
+                                            </span>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         ) : (
                             <p className={styles.muted}>Measurement data not available.</p>
@@ -468,169 +499,200 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                     <section className={styles.card}>
                         <h2 className={styles.cardTitle}>Set Pricing Breakdown</h2>
                         <div className={styles.feedbackForm}>
-                            {order.templateId && !['custom', 'custom-template'].includes(order.templateId) ? (
-                                /* Locked View for Curated Designs */
+                            {order.paymentStatus && order.paymentStatus !== 'pending' ? (
                                 <div className="space-y-4">
-                                    <div className="flex items-center gap-3 bg-purple-500/10 border border-purple-500/20 rounded-lg p-3 mb-4">
-                                        <div className="bg-purple-500 text-white text-xs font-bold px-2 py-1 rounded">
+                                    <div className="flex items-center gap-3 bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 mb-4">
+                                        <div className="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded">
                                             LOCKED
                                         </div>
-                                        <p className="text-purple-900 text-xs">
-                                            This is a <strong>Curated Design</strong>. The price is fixed.
-                                            <br />
-                                            <span className="text-purple-900 bg-purple-500/20 px-1 rounded ml-1 font-semibold">20% Commission</span> applies to this order.
+                                        <p className="text-blue-900 text-xs">
+                                            Payment has been initiated or completed ({order.paymentStatus.replace('_', ' ')}). Price modifications are disabled.
                                         </p>
                                     </div>
-
                                     <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex justify-between items-center">
-                                        <span className={styles.label} style={{ marginBottom: 0 }}>Total Earnings (Fixed):</span>
+                                        <span className={styles.label} style={{ marginBottom: 0 }}>Agreed Price:</span>
                                         <div className="text-right">
                                             <span className="text-2xl font-bold text-gray-900 block">
-                                                ₦{(order.total || order.price || 0).toLocaleString()}
+                                                ₦{(order.price || 0).toLocaleString()}
                                             </span>
                                             <span className="text-xs text-muted-foreground">
-                                                Includes delivery & platform fee
+                                                Includes delivery & commission
                                             </span>
                                         </div>
                                     </div>
-
-                                    <div className={styles.inputGroup}>
-                                        <label className={styles.label}>Estimated Completion</label>
-                                        <input
-                                            type="date"
-                                            className={styles.input}
-                                            value={endDate}
-                                            onChange={(e) => setEndDate(e.target.value)}
-                                        />
-                                    </div>
-
-                                    <button
-                                        className={`${styles.button} ${styles.approveBtn}`}
-                                        onClick={() => {
-                                            // Auto-fill breakdown for locked orders (simplified)
-                                            // Ideally we'd have this data, but for now we essentially skip logic
-                                            setBreakdown({
-                                                fabric: 0,
-                                                labor: (order.total || 0) - 5000, // Rough estimate minus delivery
-                                                customization: 0,
-                                                delivery: 5000
-                                            });
-                                            handleAction('set_price');
-                                        }}
-                                        disabled={isSubmitting || !endDate}
-                                        style={{ width: '100%', justifyContent: 'center' }}
-                                    >
-                                        Confirm & Start Order
-                                    </button>
                                 </div>
                             ) : (
-                                /* Standard View - Editable */
-                                <>
-                                    <div className={styles.inputGroup}>
-                                        <label className={styles.label}>Fabric Cost (₦)</label>
-                                        <input
-                                            type="number"
-                                            className={styles.input}
-                                            placeholder="0"
-                                            value={breakdown.fabric}
-                                            onChange={(e) => setBreakdown({ ...breakdown, fabric: Number(e.target.value) })}
-                                        />
-                                    </div>
-                                    <div className={styles.inputGroup}>
-                                        <label className={styles.label}>Labor Cost (₦)</label>
-                                        <input
-                                            type="number"
-                                            className={styles.input}
-                                            placeholder="0"
-                                            value={breakdown.labor}
-                                            onChange={(e) => setBreakdown({ ...breakdown, labor: Number(e.target.value) })}
-                                        />
-                                    </div>
-                                    <div className={styles.inputGroup}>
-                                        <label className={styles.label}>Customization (₦)</label>
-                                        <input
-                                            type="number"
-                                            className={styles.input}
-                                            placeholder="0"
-                                            value={breakdown.customization}
-                                            onChange={(e) => setBreakdown({ ...breakdown, customization: Number(e.target.value) })}
-                                        />
-                                    </div>
-                                    <div className={styles.inputGroup}>
-                                        <label className={styles.label}>Delivery Fee (Fixed)</label>
-                                        <input
-                                            type="text"
-                                            className={`${styles.input} bg-slate-900 text-slate-400`}
-                                            value="₦5,000"
-                                            disabled
-                                        />
-                                    </div>
+                                order.templateId && !['custom', 'custom-template'].includes(order.templateId) ? (
+                                    /* Locked View for Curated Designs */
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-3 bg-purple-500/10 border border-purple-500/20 rounded-lg p-3 mb-4">
+                                            <div className="bg-purple-500 text-white text-xs font-bold px-2 py-1 rounded">
+                                                LOCKED
+                                            </div>
+                                            <p className="text-purple-900 text-xs">
+                                                This is a <strong>Curated Design</strong>. The price is fixed.
+                                                <br />
+                                                <span className="text-purple-900 bg-purple-500/20 px-1 rounded ml-1 font-semibold">20% Commission</span> applies to this order.
+                                            </p>
+                                        </div>
 
-                                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 mb-4 flex justify-between items-center">
-                                        <span className={styles.label} style={{ marginBottom: 0 }}>Total Price:</span>
-                                        <span className="text-xl font-bold text-gray-900">
-                                            ₦{(breakdown.fabric + breakdown.labor + breakdown.customization + breakdown.delivery).toLocaleString()}
-                                        </span>
-                                    </div>
+                                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex justify-between items-center">
+                                            <span className={styles.label} style={{ marginBottom: 0 }}>Total Earnings (Fixed):</span>
+                                            <div className="text-right">
+                                                <span className="text-2xl font-bold text-gray-900 block">
+                                                    ₦{(order.total || order.price || 0).toLocaleString()}
+                                                </span>
+                                                <span className="text-xs text-muted-foreground">
+                                                    Includes delivery & platform fee
+                                                </span>
+                                            </div>
+                                        </div>
 
-                                    <div className={styles.inputGroup}>
-                                        <label className={styles.label}>Estimated Completion</label>
-                                        <input
-                                            type="date"
-                                            className={styles.input}
-                                            value={endDate}
-                                            onChange={(e) => setEndDate(e.target.value)}
-                                        />
+                                        <div className={styles.inputGroup}>
+                                            <label className={styles.label}>Estimated Completion</label>
+                                            <input
+                                                type="date"
+                                                className={styles.input}
+                                                value={endDate}
+                                                onChange={(e) => setEndDate(e.target.value)}
+                                            />
+                                        </div>
+
+                                        <button
+                                            className={`${styles.button} ${styles.approveBtn}`}
+                                            onClick={() => {
+                                                // Auto-fill breakdown for locked orders (simplified)
+                                                // Ideally we'd have this data, but for now we essentially skip logic
+                                                const curatedBreakdown = {
+                                                    fabric: 0,
+                                                    labor: (order.total || 0) - 5000, // Rough estimate minus delivery
+                                                    customization: 0,
+                                                    delivery: 5000
+                                                };
+                                                handleAction('set_price', curatedBreakdown);
+                                            }}
+                                            disabled={isSubmitting || !endDate}
+                                            style={{ width: '100%', justifyContent: 'center' }}
+                                        >
+                                            Confirm & Start Order
+                                        </button>
                                     </div>
-                                    <button
-                                        className={`${styles.button} ${styles.approveBtn}`}
-                                        onClick={() => handleAction('set_price')}
-                                        disabled={isSubmitting || !endDate}
-                                        style={{ width: '100%', justifyContent: 'center' }}
-                                    >
-                                        Submit Quote
-                                    </button>
-                                    {order.price && (
-                                        <p className={styles.muted} style={{ textAlign: 'center', marginTop: '0.5rem' }}>
-                                            Current Price: ₦{order.price.toLocaleString()}
-                                        </p>
-                                    )}
-                                </>
+                                ) : (
+                                    /* Standard View - Editable */
+                                    <>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                            <div>
+                                                <label className="text-xs font-semibold uppercase text-muted-foreground mb-1.5 block">Fabric Cost</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">₦</span>
+                                                    <input
+                                                        type="number"
+                                                        className="w-full pl-8 pr-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
+                                                        value={breakdown.fabric || ''}
+                                                        onChange={(e) => setBreakdown({ ...breakdown, fabric: Number(e.target.value) })}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-semibold uppercase text-muted-foreground mb-1.5 block">Labor Cost</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">₦</span>
+                                                    <input
+                                                        type="number"
+                                                        className="w-full pl-8 pr-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
+                                                        value={breakdown.labor || ''}
+                                                        onChange={(e) => setBreakdown({ ...breakdown, labor: Number(e.target.value) })}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-semibold uppercase text-muted-foreground mb-1.5 block">Customization</label>
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">₦</span>
+                                                    <input
+                                                        type="number"
+                                                        className="w-full pl-8 pr-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
+                                                        value={breakdown.customization || ''}
+                                                        onChange={(e) => setBreakdown({ ...breakdown, customization: Number(e.target.value) })}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-semibold uppercase text-muted-foreground mb-1.5 block">Delivery Fee</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        className="w-full px-3 py-2 bg-slate-50 text-slate-500 border border-slate-200 rounded-lg cursor-not-allowed font-medium"
+                                                        value="₦5,000 (Fixed)"
+                                                        disabled
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-slate-900 text-white p-4 rounded-xl shadow-lg shadow-indigo-500/10 mb-6 flex justify-between items-center border border-indigo-500/20">
+                                            <div className="flex flex-col">
+                                                <span className="text-xs text-indigo-300 uppercase font-semibold">Total Price Quote</span>
+                                                <span className="text-xs text-slate-400">Includes delivery & commission</span>
+                                            </div>
+                                            <span className="text-2xl font-bold font-mono tracking-tight text-white">
+                                                ₦{(breakdown.fabric + breakdown.labor + breakdown.customization + breakdown.delivery).toLocaleString()}
+                                            </span>
+                                        </div>
+
+                                        <div className={styles.inputGroup}>
+                                            <label className={styles.label}>Estimated Completion</label>
+                                            <input
+                                                type="date"
+                                                className={styles.input}
+                                                value={endDate}
+                                                onChange={(e) => setEndDate(e.target.value)}
+                                            />
+                                        </div>
+                                        <button
+                                            className={`${styles.button} ${styles.approveBtn}`}
+                                            onClick={() => handleAction('set_price')}
+                                            disabled={isSubmitting || !endDate}
+                                            style={{ width: '100%', justifyContent: 'center' }}
+                                        >
+                                            Submit Quote
+                                        </button>
+                                        {order.price && (
+                                            <p className={styles.muted} style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+                                                Current Price: ₦{order.price.toLocaleString()}
+                                            </p>
+                                        )}
+                                    </>
+                                )
                             )}
                         </div>
                     </section>
 
                     <section className={styles.card}>
-                        <h2 className={styles.cardTitle}><MessageSquare size={20} /> Design Feedback</h2>
-                        <div className={styles.feedbackForm}>
-                            <textarea
-                                className={styles.textarea}
-                                placeholder="Suggest edits or request changes..."
-                                value={comment}
-                                onChange={(e) => setComment(e.target.value)}
-                                disabled={isSubmitting}
-                            />
-
-                            <div className={styles.inputGroup}>
-                                <SimpleImageUpload
-                                    label="Attach Reference Image (Optional)"
-                                    onUpload={(url: string) => setAttachmentUrl(url)}
-                                    value={attachmentUrl}
-                                />
-                            </div>
-
-                            <div className={styles.actions} style={{ flexDirection: 'column', gap: '0.5rem' }}>
-                                <button
-                                    className={`${styles.button} ${styles.suggestBtn}`}
-                                    onClick={() => handleAction('suggest_edit')}
-                                    disabled={isSubmitting}
-                                    style={{ width: '100%' }}
-                                >
-                                    <MessageSquare size={18} /> Suggest Edits
-                                </button>
-
-                            </div>
-                        </div>
+                        <ChatInterface
+                            currentUserId={currentUser?.id || ''}
+                            feedbackLog={order.feedbackLog || []}
+                            isSending={isSubmitting}
+                            onSendMessage={async (msg, attachment) => {
+                                setComment(msg);
+                                setAttachmentUrl(attachment || '');
+                                // We need to handle state update differently since ChatInterface handles its own input state
+                                // But here we trigger the action immediately
+                                await handleAction('reply', undefined, msg, attachment);
+                            }}
+                            title="Design Feedback & Chat"
+                            placeholder="Type a message or reply..."
+                            variant="light"
+                        />
+                        {/* Hidden controls for specific actions if needed, or integrate them into chat header? 
+                            For now, keep the specific action buttons (Suggest Edit, etc.) separate if they are distinct from chat.
+                            Actually, 'reply' is the chat. 'suggest_edit' is also a form of chat but with a specific flag.
+                            The user asked for "look more like messaging".
+                            We can keep the ChatInterface for general communication.
+                            For specific actions like 'Suggest Edit', we might want to keep the buttons or move them.
+                            Let's keep the standard chat for 'reply' action. 
+                            The other actions (Suggest Edit) could be additional buttons below or in a separate "Actions" area.
+                        */}
                     </section>
                 </aside>
             </div>

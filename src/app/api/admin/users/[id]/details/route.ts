@@ -17,6 +17,20 @@ export async function GET(
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
+        let address = user.address;
+        let state = user.state;
+
+        // If missing, look up saved addresses
+        if (!address) {
+            const savedAddresses = await findAllByField<any>('addresses', 'userId', id);
+            if (savedAddresses.length > 0) {
+                // Determine default: explicit default or first created (fallback)
+                const defaultAddr = savedAddresses.find(a => a.isDefault) || savedAddresses[0];
+                address = defaultAddr.address;
+                state = defaultAddr.state;
+            }
+        }
+
         const baseData = {
             user: {
                 id: user.id,
@@ -24,7 +38,9 @@ export async function GET(
                 firstName: user.firstName,
                 lastName: user.lastName,
                 role: user.role,
-                createdAt: user.createdAt
+                createdAt: user.createdAt,
+                address,
+                state
             }
         };
 
@@ -36,7 +52,7 @@ export async function GET(
 
             const totalSpent = orders
                 .filter(o => o.status !== 'cancelled')
-                .reduce((sum, o) => sum + (o.total || 0), 0);
+                .reduce((sum, o) => sum + (o.price || 0), 0);
 
             return NextResponse.json({
                 ...baseData,
@@ -72,9 +88,10 @@ export async function GET(
             const billableStatuses = ['confirmed', 'sewing', 'finishing', 'ready_for_delivery', 'in_transit', 'delivered'];
             assignedOrders.forEach(o => {
                 if (billableStatuses.includes(o.status) && o.price) {
-                    const deliveryFee = 5000;
+                    const deliveryFee = o.priceBreakdown?.delivery || 5000;
                     const commissionable = Math.max(0, o.price - deliveryFee);
-                    accrued += (commissionable * 0.15); // 15% rate
+                    const rate = o.templateId ? 0.20 : 0.15;
+                    accrued += (commissionable * rate);
                 }
             });
             const outstandingBalance = Math.max(0, accrued - totalCommissionEarned);

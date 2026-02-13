@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { findByField, DbUser } from '@/lib/db';
+import { findByField, DbUser, logAudit } from '@/lib/db';
 import { setSession } from '@/lib/session';
 
 export async function POST(request: NextRequest) {
@@ -44,6 +44,9 @@ export async function POST(request: NextRequest) {
 
         // Set session cookie
         await setSession(user.id, user.role);
+
+        // Audit Log
+        await logAudit(user.id, 'user.login', 'User logged in successfully', user.id, user.email);
 
         // Return user without password
         const { passwordHash, ...userWithoutPassword } = user;

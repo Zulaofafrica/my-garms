@@ -53,6 +53,7 @@ export async function GET(
                 skillLevel: d.skillLevel,
                 estimatedTurnaround: '5-7 days',
                 minPrice: 15000, // Mock
+                location: d.workshopAddress || 'Lagos, Nigeria',
                 samples: d.portfolioSamples || []
             };
         }));

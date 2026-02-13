@@ -98,11 +98,19 @@ export default function UserManagementPage() {
         }
     };
 
-    const filteredUsers = users.filter(user =>
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.lastName.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const [roleFilter, setRoleFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState('all');
+
+    const filteredUsers = users.filter(user => {
+        const matchesSearch = user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            user.lastName.toLowerCase().includes(searchQuery.toLowerCase());
+
+        const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+        const matchesStatus = statusFilter === 'all' || (user.status || 'active') === statusFilter;
+
+        return matchesSearch && matchesRole && matchesStatus;
+    });
 
     const getRoleIcon = (role: string) => {
         switch (role) {
@@ -119,15 +127,41 @@ export default function UserManagementPage() {
         <div>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                 <h1 className="text-2xl font-bold text-slate-800">User Management</h1>
-                <div className="relative w-full md:w-auto">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                    <input
-                        type="text"
-                        placeholder="Search users..."
-                        className="w-full md:w-64 pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
+
+                <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                    <div className="flex gap-2 w-full md:w-auto">
+                        <select
+                            className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                        >
+                            <option value="all">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="suspended">Suspended</option>
+                            <option value="disabled">Disabled</option>
+                        </select>
+                        <select
+                            className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            value={roleFilter}
+                            onChange={(e) => setRoleFilter(e.target.value)}
+                        >
+                            <option value="all">All Roles</option>
+                            <option value="customer">Customer</option>
+                            <option value="designer">Designer</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+
+                    <div className="relative w-full md:w-auto">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                        <input
+                            type="text"
+                            placeholder="Search users..."
+                            className="w-full md:w-64 pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -138,6 +172,7 @@ export default function UserManagementPage() {
                             <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">User</th>
                             <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Role</th>
                             <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Status</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Location</th>
                             <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Joined</th>
                             <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Actions</th>
                         </tr>
@@ -181,6 +216,16 @@ export default function UserManagementPage() {
                                         }`}>
                                         {user.status || 'active'}
                                     </span>
+                                </td>
+                                <td className="px-6 py-4 text-sm text-slate-500">
+                                    {(user.address || user.state) ? (
+                                        <div className="flex flex-col">
+                                            <span className="truncate max-w-[150px]">{user.address}</span>
+                                            <span className="text-xs text-slate-400">{user.state}</span>
+                                        </div>
+                                    ) : (
+                                        <span className="text-slate-400 italic">N/A</span>
+                                    )}
                                 </td>
                                 <td className="px-6 py-4 text-sm text-slate-500">
                                     {new Date(user.createdAt).toLocaleDateString()}

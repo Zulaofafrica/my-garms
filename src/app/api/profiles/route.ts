@@ -5,6 +5,7 @@ import {
     insertOne,
     generateId,
     DbProfile,
+    logAudit,
 } from '@/lib/db';
 
 // GET /api/profiles - List profiles for current user
@@ -64,6 +65,9 @@ export async function POST(request: NextRequest) {
         };
 
         await insertOne('profiles', newProfile);
+
+        // Audit Log
+        await logAudit(newProfile.userId, 'profile.create', `User created profile ${newProfile.name}`, newProfile.id);
 
         return NextResponse.json({
             profile: newProfile,

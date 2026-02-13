@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { findByField, insertOne, generateId, DbUser } from '@/lib/db';
+import { findByField, insertOne, generateId, DbUser, logAudit } from '@/lib/db';
 import { setSession } from '@/lib/session';
 
 export async function POST(request: NextRequest) {
@@ -55,9 +55,14 @@ export async function POST(request: NextRequest) {
             status: 'active',
             isVerified: false,
             createdAt: new Date().toISOString(),
+            address: body.address || undefined,
+            state: body.state || undefined,
         };
 
         await insertOne('users', newUser);
+
+        // Audit Log
+        await logAudit(newUser.id, 'user.signup', 'User registered successfully', newUser.id, newUser.email);
 
         // Set session cookie
         await setSession(newUser.id, newUser.role);

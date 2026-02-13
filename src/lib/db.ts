@@ -31,6 +31,22 @@ export interface DbUser {
     status: 'active' | 'suspended' | 'disabled';
     isVerified: boolean;
     createdAt: string;
+    // Address Fields
+    address?: string;
+    state?: string;
+}
+
+export interface DbAddress {
+    id: string;
+    userId: string;
+    label: string; // 'Home', 'Work', 'Other'
+    fullName: string;
+    phone: string;
+    address: string;
+    city: string;
+    state: string;
+    isDefault: boolean;
+    createdAt: string;
 }
 
 export interface DbProfile {
@@ -239,6 +255,23 @@ function mapUser(row: any): DbUser {
         status: row.status || 'active',
         isVerified: row.is_verified || false,
         createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+        address: row.address,
+        state: row.state,
+    };
+}
+
+function mapAddress(row: any): DbAddress {
+    return {
+        id: row.id,
+        userId: row.user_id,
+        label: row.label,
+        fullName: row.full_name,
+        phone: row.phone,
+        address: row.address,
+        city: row.city,
+        state: row.state,
+        isDefault: row.is_default,
+        createdAt: row.created_at?.toISOString() || new Date().toISOString(),
     };
 }
 
@@ -426,6 +459,9 @@ export async function readCollection<T>(collection: string): Promise<T[]> {
         } else if (collection === 'curated_designs') {
             const { rows } = await query('SELECT * FROM curated_designs ORDER BY created_at DESC');
             return rows.map(mapCuratedDesign) as unknown as T[];
+        } else if (collection === 'addresses') {
+            const { rows } = await query('SELECT * FROM addresses');
+            return rows.map(mapAddress) as unknown as T[];
         }
         return [];
     } catch (error) {
@@ -527,6 +563,14 @@ export async function findAllByField<T>(
             const { rows } = await query('SELECT * FROM dispute_evidence WHERE dispute_id = $1', [value]);
             return rows.map(mapDisputeEvidence) as unknown as T[];
         }
+        if (collection === 'audit_logs' && field === 'resourceId') {
+            const { rows } = await query('SELECT * FROM audit_logs WHERE resource_id = $1 ORDER BY timestamp DESC', [value]);
+            return rows.map(mapAuditLog) as unknown as T[];
+        }
+        if (collection === 'addresses' && field === 'userId') {
+            const { rows } = await query('SELECT * FROM addresses WHERE user_id = $1 ORDER BY is_default DESC, created_at DESC', [value]);
+            return rows.map(mapAddress) as unknown as T[];
+        }
 
 
         const all = await readCollection<T>(collection);
@@ -545,8 +589,14 @@ export async function insertOne<T extends { id: string }>(
         if (collection === 'users') {
             const u = item as unknown as DbUser;
             await query(
-                'INSERT INTO users (id, email, password_hash, first_name, last_name, role, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-                [u.id, u.email, u.passwordHash, u.firstName, u.lastName, u.role, u.createdAt]
+                'INSERT INTO users (id, email, password_hash, first_name, last_name, role, created_at, address, state) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+                [u.id, u.email, u.passwordHash, u.firstName, u.lastName, u.role, u.createdAt, u.address || null, u.state || null]
+            );
+        } else if (collection === 'addresses') {
+            const a = item as unknown as DbAddress;
+            await query(
+                'INSERT INTO addresses (id, user_id, label, full_name, phone, address, city, state, is_default, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+                [a.id, a.userId, a.label, a.fullName, a.phone, a.address, a.city, a.state, a.isDefault, a.createdAt]
             );
         } else if (collection === 'profiles') {
             const p = item as unknown as DbProfile;
@@ -716,6 +766,8 @@ export async function deleteOne<T extends { id: string }>(
             await query('DELETE FROM dispute_evidence WHERE id = $1', [id]);
         } else if (collection === 'curated_designs') {
             await query('DELETE FROM curated_designs WHERE id = $1', [id]);
+        } else if (collection === 'addresses') {
+            await query('DELETE FROM addresses WHERE id = $1', [id]);
         } else {
             return false;
         }
@@ -728,6 +780,19 @@ export async function deleteOne<T extends { id: string }>(
 
 export function generateId(): string {
     return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+export function generateOrderId(): string {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const numbers = '0123456789';
+    let result = '';
+    for (let i = 0; i < 3; i++) {
+        result += letters.charAt(Math.floor(Math.random() * letters.length));
+    }
+    for (let i = 0; i < 4; i++) {
+        result += numbers.charAt(Math.floor(Math.random() * numbers.length));
+    }
+    return result;
 }
 
 export async function logAudit(

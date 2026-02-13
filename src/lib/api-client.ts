@@ -97,6 +97,10 @@ export const ordersApi = {
         return fetchApi<{ orders: Order[] }>('/orders');
     },
 
+    get: async (id: string) => {
+        return fetchApi<{ order: Order }>(`/orders/${id}`);
+    },
+
     create: async (data: {
         profileId: string;
         templateId?: string;
@@ -151,7 +155,7 @@ export const ordersApi = {
         });
     },
 
-    submitReply: async (id: string, data: { comment: string }) => {
+    submitReply: async (id: string, data: { comment: string; attachmentUrl?: string }) => {
         return fetchApi<{ order: Order; message: string }>(`/orders/${id}/feedback`, {
             method: 'POST',
             body: JSON.stringify({ action: 'reply', ...data }),
@@ -180,6 +184,25 @@ export const ordersApi = {
     getPaymentDetails: async (orderId: string) => {
         return fetchApi<{ bankName: string; accountNumber: string; accountName: string }>(`/orders/${orderId}/payment-details`);
     },
+};
+
+export const addressesApi = {
+    async list() {
+        return fetchApi<{ addresses: any[] }>('/users/addresses');
+    },
+
+    async create(data: any) {
+        return fetchApi<{ address: any }>('/users/addresses', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    },
+
+    async delete(id: string) {
+        return fetchApi<{ success: boolean }>(`/users/addresses/${id}`, {
+            method: 'DELETE'
+        });
+    }
 };
 
 // Designer API
@@ -273,6 +296,22 @@ export const designerApi = {
 
 // Admin API
 export const adminApi = {
+    async getFinanceStats() {
+        return fetchApi<{ totalRevenue: number; pendingRevenue: number; totalGMV: number; pendingCount: number; approvedCount: number }>('/admin/finance/stats');
+    },
+
+    async getCommissions(status = 'all', designerId?: string) {
+        let url = `/admin/finance/commissions?status=${status}`;
+        if (designerId) url += `&designerId=${designerId}`;
+        return fetchApi<{ payments: any[] }>(url);
+    },
+
+    async approveCommission(id: string) {
+        return fetchApi<{ success: true; message: string; payment: any }>(`/admin/commission/${id}/approve`, {
+            method: 'POST'
+        });
+    },
+
     getUsers: async () => {
         return fetchApi<{ users: User[] }>('/admin/users');
     },
@@ -372,6 +411,8 @@ export interface User {
     status?: 'active' | 'suspended' | 'disabled';
     isVerified?: boolean;
     createdAt: string;
+    address?: string;
+    state?: string;
 }
 
 export interface Profile {

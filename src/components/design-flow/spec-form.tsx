@@ -78,6 +78,18 @@ export function SpecForm() {
                     ))}
                 </div>
                 <input type="hidden" {...register("fabricSource")} />
+
+                {fabricSource === 'own' && (
+                    <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                        <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                        <div className="text-sm">
+                            <h4 className="font-bold text-amber-500 mb-1">Important Note</h4>
+                            <p className="text-amber-200/80">
+                                Since you have your own fabric, <strong>you will need to arrange delivery to the designer</strong> once one is assigned. We'll share their workshop address after you confirm your choice.
+                            </p>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Budget Range (Optional) */}

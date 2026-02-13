@@ -3,8 +3,9 @@ import { getSession } from '@/lib/session';
 import {
     findAllByField,
     insertOne,
-    generateId,
+    generateOrderId,
     DbOrder,
+    logAudit,
 } from '@/lib/db';
 
 // GET /api/orders - List orders for current user
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
         }
 
         const order: DbOrder = {
-            id: generateId(),
+            id: generateOrderId(),
             userId: session.userId,
             profileId,
             templateId,
@@ -85,7 +86,6 @@ export async function POST(request: NextRequest) {
         // } catch (e) { console.error("Matching error:", e); }
 
         // Notify User (Confirmation)
-        // Notify User (Confirmation)
         try {
             const { NotificationService } = await import('@/lib/notification-service');
             await NotificationService.notify(
@@ -99,6 +99,14 @@ export async function POST(request: NextRequest) {
                 }
             );
         } catch (e) { console.error("Notification error:", e); }
+
+        // Audit Log
+        await logAudit(
+            session.userId,
+            'order.create',
+            `User created order #${order.id}`,
+            order.id
+        );
 
         return NextResponse.json({
             order,

@@ -14,7 +14,8 @@ import {
     LogOut,
     Menu,
     X,
-    Palette
+    Palette,
+    Wallet
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -72,11 +73,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     };
 
     const handleLogout = async () => {
-        // We'd need an endpoint for this, or just clear cookie if we could (HttpOnly prevents client clear).
-        // Let's reload for now, the cookie persists. 
-        // Ideally we need /api/admin/logout.
-        // For now, assume session expires or we implement logout later.
-        router.push('/');
+        try {
+            await fetch('/api/admin/logout', { method: 'POST' });
+            setIsAuthenticated(false);
+            router.push('/admin'); // Ensure URL stays on admin
+        } catch (error) {
+            console.error("Logout failed", error);
+        }
     };
 
     if (isChecking) {
@@ -130,6 +133,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { href: '/admin', label: 'Overview', icon: LayoutDashboard },
         { href: '/admin/users', label: 'User Management', icon: Users },
         { href: '/admin/orders', label: 'Orders & Assignment', icon: ShoppingBag },
+        { href: '/admin/finance', label: 'Finance & Commissions', icon: Wallet },
         { href: '/admin/designs', label: 'Curated Designs', icon: Palette },
         { href: '/admin/disputes', label: 'Disputes', icon: AlertTriangle },
         { href: '/admin/logs', label: 'Audit Logs', icon: FileText },

@@ -51,10 +51,11 @@ export default function OrdersManagementPage() {
 
 
     const filteredOrders = orders.filter(order => {
+        const searchLower = searchQuery.toLowerCase();
         const matchesSearch =
-            order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            order.templateName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (order.fabricName && order.fabricName.toLowerCase().includes(searchQuery.toLowerCase()));
+            (order.id && order.id.toLowerCase().includes(searchLower)) ||
+            (order.templateName && order.templateName.toLowerCase().includes(searchLower)) ||
+            (order.fabricName && order.fabricName.toLowerCase().includes(searchLower));
 
         if (!matchesSearch) return false;
 

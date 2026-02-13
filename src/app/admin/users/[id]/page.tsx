@@ -16,6 +16,8 @@ interface UserDetailsData {
         lastName: string;
         role: string;
         createdAt: string;
+        address?: string;
+        state?: string;
     };
     customerDetails?: {
         profiles: any[];
@@ -94,6 +96,12 @@ export default function UserDetailsPage() {
                             </span>
                             <span className="text-xs text-slate-400">Joined {new Date(user.createdAt).toLocaleDateString()}</span>
                         </div>
+                        {(user.address || user.state) && (
+                            <div className="mt-1 text-sm text-slate-500 flex items-center gap-1">
+                                <span className="font-medium">Location:</span>
+                                {user.address}{user.address && user.state ? ', ' : ''}{user.state}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -163,7 +171,7 @@ export default function UserDetailsPage() {
                                             <td className="px-4 py-3 font-medium">{order.templateName}</td>
                                             <td className="px-4 py-3 text-slate-500">{new Date(order.createdAt).toLocaleDateString()}</td>
                                             <td className="px-4 py-3 capitalize">{order.status.replace('_', ' ')}</td>
-                                            <td className="px-4 py-3 font-bold">₦{order.total.toLocaleString()}</td>
+                                            <td className="px-4 py-3 font-bold">₦{(order.price || 0).toLocaleString()}</td>
                                         </tr>
                                     ))}
                                     {customerDetails.orders.length === 0 && (
@@ -317,7 +325,9 @@ export default function UserDetailsPage() {
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {designerDetails.assignedOrders.map((order: any) => {
-                                        const commission = (Math.max(0, (order.price || 0) - 5000) * 0.15);
+                                        const deliveryFee = order.priceBreakdown?.delivery || 5000;
+                                        const rate = order.templateId ? 0.20 : 0.15;
+                                        const commission = (Math.max(0, (order.price || 0) - deliveryFee) * rate);
                                         return (
                                             <tr key={order.id} className="hover:bg-slate-50">
                                                 <td className="px-4 py-3 font-mono text-xs text-slate-500">#{order.id.slice(-6)}</td>

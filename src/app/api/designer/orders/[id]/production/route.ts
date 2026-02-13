@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
-import { findById, updateOne, DbUser, DbOrder } from '@/lib/db';
+import { findById, updateOne, DbUser, DbOrder, logAudit } from '@/lib/db';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -49,6 +49,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         }
 
         const updatedOrder = await updateOne<DbOrder>('orders', id, updates);
+
+        // Audit Log
+        await logAudit(user.id, 'order.production_update', `Production stage updated to ${stage}`, id);
 
         // Notify Customer
         try {

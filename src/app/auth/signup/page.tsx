@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles, Scissors, Briefcase } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles, Scissors, Briefcase, MapPin } from "lucide-react";
 import { authApi } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
 import styles from "../auth.module.css";
@@ -22,6 +22,8 @@ export default function SignUpPage() {
     password: "",
     confirmPassword: "",
     role: "customer" as "customer" | "designer",
+    address: "",
+    state: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,6 +70,8 @@ export default function SignUpPage() {
         firstName: formData.firstName,
         lastName: formData.lastName,
         role: formData.role,
+        address: formData.address,
+        state: formData.state,
       });
 
       // Redirect to profile or designer dashboard based on role
@@ -199,6 +203,38 @@ export default function SignUpPage() {
                   onChange={handleChange}
                   className={styles.input}
                   required
+                />
+              </div>
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label htmlFor="address" className={styles.inputLabel}>Address</label>
+              <div className={styles.inputWrapper}>
+                <MapPin className={styles.inputIcon} size={18} />
+                <input
+                  id="address"
+                  name="address"
+                  type="text"
+                  placeholder="123 Fashion Street"
+                  value={formData.address}
+                  onChange={handleChange}
+                  className={styles.input}
+                />
+              </div>
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label htmlFor="state" className={styles.inputLabel}>State</label>
+              <div className={styles.inputWrapper}>
+                <MapPin className={styles.inputIcon} size={18} />
+                <input
+                  id="state"
+                  name="state"
+                  type="text"
+                  placeholder="Lagos"
+                  value={formData.state}
+                  onChange={handleChange}
+                  className={styles.input}
                 />
               </div>
             </div>

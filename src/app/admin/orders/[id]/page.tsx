@@ -93,7 +93,7 @@ export default function OrderDetailsPage() {
                 </div>
                 <div className="text-right">
                     <p className="text-sm text-slate-500">Total Value</p>
-                    <p className="text-3xl font-bold text-slate-900">₦{(order.total || 0).toLocaleString()}</p>
+                    <p className="text-3xl font-bold text-slate-900">₦{(order.price || 0).toLocaleString()}</p>
                 </div>
             </div>
 

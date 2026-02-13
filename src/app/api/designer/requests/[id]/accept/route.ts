@@ -29,10 +29,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: result.message }, { status: 400 });
         }
 
+        await import('@/lib/db').then(m => m.logAudit(user.id, 'designer.request_accept', `Designer accepted order #${id}`, id));
+
         return NextResponse.json({
             success: true,
             message: 'Order accepted successfully'
         });
+
+        // Audit Log (Post-response or await before? Await before is safer for consistency)
+        // Wait, function returns. Need to insert before return.
+
     } catch (error) {
         console.error('Accept request error:', error);
         return NextResponse.json(

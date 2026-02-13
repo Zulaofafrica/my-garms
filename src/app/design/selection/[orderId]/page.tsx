@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { GlowButton } from "@/components/ui/glow-button";
 import { ordersApi } from "@/lib/api-client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, UserCheck, Star, Clock, CheckCircle } from "lucide-react";
+import { Sparkles, UserCheck, Star, Clock, CheckCircle, MapPin } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 
 export default function SelectionPage({ params }: { params: Promise<{ orderId: string }> }) {
@@ -18,9 +18,19 @@ export default function SelectionPage({ params }: { params: Promise<{ orderId: s
     const [isLoading, setIsLoading] = useState(false);
     const [selectedDesignerId, setSelectedDesignerId] = useState<string | null>(null);
 
-    // Initial load? maybe check if order is already assigned
+    // Initial load: Verify order status to prevent double-submission
     useEffect(() => {
-        // Could fetch order to verify status here
+        const checkOrderStatus = async () => {
+            try {
+                const { order } = await ordersApi.get(orderId);
+                if (order.assignmentStatus && ['shortlisted', 'assigned'].includes(order.assignmentStatus)) {
+                    setMode('success');
+                }
+            } catch (error) {
+                console.error("Failed to check order status:", error);
+            }
+        };
+        checkOrderStatus();
     }, [orderId]);
 
     const handleAutoMatch = async () => {
@@ -28,10 +38,14 @@ export default function SelectionPage({ params }: { params: Promise<{ orderId: s
         try {
             await ordersApi.confirmSelection(orderId, { method: 'auto' });
             setMode('success');
-            // setTimeout(() => router.push('/profile'), 3000);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Auto match failed", error);
-            toast.error("Something went wrong");
+            // If already processed, treat as success
+            if (error.message?.includes('already processing')) {
+                setMode('success');
+            } else {
+                toast.error("Something went wrong");
+            }
         } finally {
             setIsLoading(false);
         }
@@ -60,10 +74,14 @@ export default function SelectionPage({ params }: { params: Promise<{ orderId: s
                 designerId: selectedDesignerId
             });
             setMode('success');
-            // setTimeout(() => router.push('/profile'), 3000);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Manual selection failed", error);
-            toast.error("Selection failed");
+            // If already processed, treat as success
+            if (error.message?.includes('already processing')) {
+                setMode('success');
+            } else {
+                toast.error("Selection failed");
+            }
         } finally {
             setIsLoading(false);
         }
@@ -197,6 +215,10 @@ export default function SelectionPage({ params }: { params: Promise<{ orderId: s
                                             <div className="flex items-center gap-2">
                                                 <Clock className="w-4 h-4 text-slate-500" />
                                                 Run time: {designer.estimatedTurnaround}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <MapPin className="w-4 h-4 text-slate-500" />
+                                                {designer.location}
                                             </div>
                                             <div className="flex flex-wrap gap-2 mt-2">
                                                 {designer.specialties.slice(0, 3).map((tag: string) => (

@@ -1,5 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 import { getSession } from '@/lib/session';
 import { findById, findAllByField, DbUser, DbOrder, DbCommissionPayment } from '@/lib/db';
 
@@ -40,7 +42,7 @@ export async function GET(request: NextRequest) {
         designerOrders.forEach(o => {
             if (billableStatuses.includes(o.status) && o.price) {
                 // 15% standard, 20% for curated designs (templateId present)
-                const deliveryFee = 5000;
+                const deliveryFee = o.priceBreakdown?.delivery || 5000;
                 const commissionable = Math.max(0, o.price - deliveryFee);
                 const rate = o.templateId ? 0.20 : 0.15;
                 accrued += (commissionable * rate);

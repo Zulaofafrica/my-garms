@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
-import { findById, updateOne, deleteOne, DbProfile } from '@/lib/db';
+import { findById, updateOne, deleteOne, DbProfile, logAudit } from '@/lib/db';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -40,6 +40,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
         const updatedProfile = await updateOne<DbProfile>('profiles', id, updates);
 
+        if (updatedProfile) {
+            await logAudit(session.userId, 'profile.update', `User updated profile ${updatedProfile.name}`, id);
+        }
+
         return NextResponse.json({
             profile: updatedProfile,
             message: 'Profile updated successfully',
@@ -75,6 +79,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         }
 
         await deleteOne<DbProfile>('profiles', id);
+
+        await logAudit(session.userId, 'profile.delete', `User deleted profile ${profile.name}`, id);
 
         return NextResponse.json({
             message: 'Profile deleted successfully',

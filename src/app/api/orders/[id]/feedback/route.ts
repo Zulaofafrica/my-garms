@@ -17,7 +17,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
         const { id } = await params;
         const body = await request.json();
-        const { action, comment } = body;
+        const { action, comment, attachmentUrl } = body;
 
         if (!action || !comment || action !== 'reply') {
             return NextResponse.json({ error: 'Invalid feedback data' }, { status: 400 });
@@ -45,6 +45,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             userName: `${user.firstName} ${user.lastName}`,
             action,
             comment,
+            attachmentUrl,
             timestamp: new Date().toISOString(),
         };
 
