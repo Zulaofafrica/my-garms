@@ -246,10 +246,14 @@ export interface DbEmailJob {
 
 export interface DbSystemSetting {
     key: string; // Acts as ID
-    val: any;
+    value: any;
     description?: string;
-    updated_at: Date;
+    updatedAt: string;
 }
+
+// ... (other interfaces)
+
+
 
 export interface DbFabric {
     id: string;
@@ -463,7 +467,7 @@ function mapNotification(row: any): DbNotification {
 function mapSystemSetting(row: any): DbSystemSetting {
     return {
         key: row.key,
-        value: row.val, // 'value' is a reserved word in some SQL, so using 'val' in DB
+        value: row.val,
         description: row.description,
         updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
     };
@@ -743,7 +747,7 @@ export async function insertOne<T extends { id: string }>(
                 VALUES ($1, $2, $3, NOW())
                 RETURNING *
             `;
-            const { rows } = await query(queryText, [s.key, JSON.stringify(s.val), s.description]);
+            const { rows } = await query(queryText, [s.key, JSON.stringify(s.value), s.description]);
             return mapSystemSetting(rows[0]) as unknown as T;
         } else if (collection === 'fabrics') {
             const f = item as unknown as DbFabric;
