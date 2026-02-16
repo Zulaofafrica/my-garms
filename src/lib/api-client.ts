@@ -93,8 +93,8 @@ export const profilesApi = {
 
 // Orders API
 export const ordersApi = {
-    list: async () => {
-        return fetchApi<{ orders: Order[] }>('/orders');
+    list: async (page = 1, limit = 5) => {
+        return fetchApi<{ orders: Order[]; hasMore: boolean; total: number }>(`/orders?page=${page}&limit=${limit}`);
     },
 
     get: async (id: string) => {
@@ -207,8 +207,19 @@ export const addressesApi = {
 
 // Designer API
 export const designerApi = {
-    listOrders: async () => {
-        return fetchApi<{ orders: Order[] }>('/designer/orders');
+    listOrders: async (page = 1, limit = 5) => {
+        return fetchApi<{
+            orders: Order[];
+            hasMore: boolean;
+            total: number;
+            stats: {
+                pending: number;
+                reviewing: number;
+                changes: number;
+                total: number;
+                revenue: number;
+            }
+        }>(`/designer/orders?page=${page}&limit=${limit}`);
     },
 
     getRequests: async () => {
@@ -297,7 +308,14 @@ export const designerApi = {
 // Admin API
 export const adminApi = {
     async getFinanceStats() {
-        return fetchApi<{ totalRevenue: number; pendingRevenue: number; totalGMV: number; pendingCount: number; approvedCount: number }>('/admin/finance/stats');
+        return fetchApi<{
+            totalRevenue: number;
+            pendingRevenue: number;
+            submittedCommissions: number;
+            totalGMV: number;
+            submittedCount: number;
+            approvedCount: number
+        }>('/admin/finance/stats');
     },
 
     async getCommissions(status = 'all', designerId?: string) {

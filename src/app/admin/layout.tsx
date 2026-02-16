@@ -15,7 +15,11 @@ import {
     Menu,
     X,
     Palette,
-    Wallet
+    Wallet,
+    Settings,
+    Calendar,
+    MessageSquare,
+    Grid
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -135,8 +139,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { href: '/admin/orders', label: 'Orders & Assignment', icon: ShoppingBag },
         { href: '/admin/finance', label: 'Finance & Commissions', icon: Wallet },
         { href: '/admin/designs', label: 'Curated Designs', icon: Palette },
+        { href: '/admin/content', label: 'Content', icon: Grid }, // Added Content link
+        { href: '/admin/notifications', label: 'Notifications', icon: MessageSquare }, // Added Notifications
         { href: '/admin/disputes', label: 'Disputes', icon: AlertTriangle },
         { href: '/admin/logs', label: 'Audit Logs', icon: FileText },
+        { href: '/admin/settings', label: 'Settings', icon: Settings },
     ];
 
     return (

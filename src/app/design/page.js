@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styles from "./design.module.css";
-import { TEMPLATES, FABRICS } from "@/lib/data";
+// import { TEMPLATES, FABRICS } from "@/lib/data"; // Removed static import
 import FabricCard from "@/components/Gallery/FabricCard";
 import PreviewCanvas from "@/components/ThreeD/PreviewCanvas";
-import { Check, ChevronRight, ChevronLeft } from "lucide-react";
+import { Check, ChevronRight, ChevronLeft, Loader2 } from "lucide-react";
 
 const STEPS = ["Select Template", "Confirm Fit", "Choose Fabric", "Review & Order"];
 
@@ -15,6 +15,29 @@ export default function DesignPage() {
         template: null,
         fabric: null,
     });
+
+    // Dynamic Data State
+    const [templates, setTemplates] = useState([]);
+    const [fabrics, setFabrics] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const res = await fetch('/api/content');
+                if (res.ok) {
+                    const data = await res.json();
+                    setTemplates(data.templates || []);
+                    setFabrics(data.fabrics || []);
+                }
+            } catch (error) {
+                console.error("Failed to load content:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
 
     const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
     const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
@@ -28,11 +51,13 @@ export default function DesignPage() {
     };
 
     const renderStep = () => {
+        if (loading) return <div className="flex justify-center p-12"><Loader2 className="animate-spin" /></div>;
+
         switch (currentStep) {
             case 0:
                 return (
                     <div className={styles.grid}>
-                        {TEMPLATES.map((t) => (
+                        {templates.map((t) => (
                             <div
                                 key={t.id}
                                 className={`${styles.optionCard} ${selection.template?.id === t.id ? styles.selected : ""}`}
@@ -62,7 +87,7 @@ export default function DesignPage() {
             case 2:
                 return (
                     <div className={styles.fabricGrid}>
-                        {FABRICS.map((f) => (
+                        {fabrics.map((f) => (
                             <div key={f.id} className={selection.fabric?.id === f.id ? styles.selectedFabric : ""}>
                                 <FabricCard
                                     fabric={f}

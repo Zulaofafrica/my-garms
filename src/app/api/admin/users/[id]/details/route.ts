@@ -86,11 +86,17 @@ export async function GET(
             // Calculate accrued (unpaid) commission logic similar to finance route
             let accrued = 0;
             const billableStatuses = ['confirmed', 'sewing', 'finishing', 'ready_for_delivery', 'in_transit', 'delivered'];
+
+            // Fetch dynamic settings
+            const { getSystemSetting } = await import('@/lib/settings');
+            const defaultDeliveryFee = await getSystemSetting('delivery_fee', 5000);
+            const defaultCommissionRate = (await getSystemSetting('commission_rate', 15)) / 100;
+
             assignedOrders.forEach(o => {
                 if (billableStatuses.includes(o.status) && o.price) {
-                    const deliveryFee = o.priceBreakdown?.delivery || 5000;
+                    const deliveryFee = o.priceBreakdown?.delivery || defaultDeliveryFee;
                     const commissionable = Math.max(0, o.price - deliveryFee);
-                    const rate = o.templateId ? 0.20 : 0.15;
+                    const rate = defaultCommissionRate; // Unifying rate logic
                     accrued += (commissionable * rate);
                 }
             });

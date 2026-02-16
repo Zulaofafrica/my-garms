@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { adminApi } from '@/lib/api-client';
-import { Wallet, CheckCircle, Clock, AlertTriangle, Search, TrendingUp, DollarSign } from 'lucide-react';
+import { Wallet, CheckCircle, Clock, Search, TrendingUp } from 'lucide-react';
 import { useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm-modal';
 import { format } from 'date-fns';
@@ -36,8 +36,9 @@ export default function FinancePage() {
     const [stats, setStats] = useState({
         totalRevenue: 0,
         pendingRevenue: 0,
+        submittedCommissions: 0,
         totalGMV: 0,
-        pendingCount: 0,
+        submittedCount: 0,
         approvedCount: 0
     });
     const [commissions, setCommissions] = useState<any[]>([]);
@@ -103,6 +104,13 @@ export default function FinancePage() {
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <StatCard
+                    label="Gross Merchandise Value"
+                    value={`₦${stats.totalGMV.toLocaleString()}`}
+                    icon={TrendingUp}
+                    color="text-blue-600"
+                    bg="bg-blue-100"
+                />
+                <StatCard
                     label="Total Revenue (Platform)"
                     value={`₦${stats.totalRevenue.toLocaleString()}`}
                     icon={Wallet}
@@ -117,15 +125,8 @@ export default function FinancePage() {
                     bg="bg-amber-100"
                 />
                 <StatCard
-                    label="Gross Merchandise Value"
-                    value={`₦${stats.totalGMV.toLocaleString()}`}
-                    icon={TrendingUp}
-                    color="text-blue-600"
-                    bg="bg-blue-100"
-                />
-                <StatCard
-                    label="Commissions Received"
-                    value={stats.approvedCount}
+                    label="Submitted Commissions"
+                    value={`₦${stats.submittedCommissions.toLocaleString()}`}
                     icon={CheckCircle}
                     color="text-purple-600"
                     bg="bg-purple-100"

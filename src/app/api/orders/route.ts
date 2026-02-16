@@ -9,19 +9,30 @@ import {
 } from '@/lib/db';
 
 // GET /api/orders - List orders for current user
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
         const session = await getSession();
         if (!session) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+        // const session = { userId: '1768848002170_lnx5ftljb' }; // Hardcoded Kayode's ID
 
-        const orders = await findAllByField<DbOrder>('orders', 'userId', session.userId);
+        const { searchParams } = new URL(request.url);
+        const page = parseInt(searchParams.get('page') || '1');
+        const limit = parseInt(searchParams.get('limit') || '5');
+        // console.log(`[API] Orders List - Page: ${page}, Limit: ${limit}`);
+        const skip = (page - 1) * limit;
+
+        const allOrders = await findAllByField<DbOrder>('orders', 'userId', session.userId);
 
         // Sort by createdAt descending (newest first)
-        orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        allOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-        return NextResponse.json({ orders });
+        const total = allOrders.length;
+        const orders = allOrders.slice(skip, skip + limit);
+        const hasMore = skip + limit < total;
+
+        return NextResponse.json({ orders, hasMore, total });
     } catch (error) {
         console.error('Get orders error:', error);
         return NextResponse.json(

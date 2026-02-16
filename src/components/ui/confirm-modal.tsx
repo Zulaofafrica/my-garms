@@ -2,9 +2,9 @@
 
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, HelpCircle, X } from 'lucide-react';
+import { AlertTriangle, HelpCircle, X, CheckCircle } from 'lucide-react';
 
-type ConfirmType = 'warning' | 'info' | 'danger';
+type ConfirmType = 'warning' | 'info' | 'danger' | 'success';
 
 interface ConfirmOptions {
     title?: string;
@@ -54,6 +54,12 @@ const typeConfig = {
         iconBg: 'bg-indigo-500/20',
         iconColor: 'text-indigo-400',
         confirmBg: 'bg-indigo-600 hover:bg-indigo-500',
+    },
+    success: {
+        icon: CheckCircle,
+        iconBg: 'bg-green-500/20',
+        iconColor: 'text-green-400',
+        confirmBg: 'bg-green-600 hover:bg-green-500',
     },
 };
 

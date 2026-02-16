@@ -31,30 +31,21 @@ export default function DisputeResolutionPage({ params }: PageProps) {
         const loadDispute = async () => {
             try {
                 const { id } = await params;
-                // Currently fetching from admin list or similar would be better, but we need details.
-                // WE missed implementing GET /api/admin/disputes/[id]. 
-                // I will mock fetch or assume I can get it from the list if I passed state (Next.js doesn't do history state easily).
-                // I will rely on GET /api/orders/[orderId]/dispute if I knew the order ID, but I only have dispute ID.
-                // Hotfix: I'll assume for now I added the endpoint or I can filter from the list API (inefficient but works for MVP).
-
-                const res = await fetch('/api/admin/disputes'); // Fetch all for now...
+                const res = await fetch(`/api/admin/disputes/${id}`);
                 const data = await res.json();
+
                 if (data.success) {
-                    const found = data.disputes.find((d: any) => d.id === id);
-                    if (found) {
-                        // This list might not have evidence attached depending on implementation of readCollection
-                        // Actually readCollection just maps rows, doesn't join evidence.
-                        // I definitely need GET /api/admin/disputes/[id].
-                        // I will create that endpoint next.
-                        setDispute(found);
-                    }
+                    setDispute(data.dispute);
+                } else {
+                    toast.error(data.error || "Failed to load dispute");
                 }
             } catch (err) {
                 console.error(err);
+                toast.error("Network error loading dispute");
             }
         };
         loadDispute();
-    }, [params]);
+    }, [params, toast]);
 
     const handleResolve = async (action: 'RESOLVE' | 'DISMISS') => {
         if (!resolutionText && action === 'RESOLVE') {
@@ -113,10 +104,23 @@ export default function DisputeResolutionPage({ params }: PageProps) {
                         <h3 className="text-sm font-bold uppercase text-slate-400 mb-3">Customer Report</h3>
                         <p className="text-slate-700 bg-slate-50 p-4 rounded-lg">{dispute.description}</p>
 
-                        {/* Evidence would be here if fetched */}
+                        {/* Evidence Section */}
                         <div className="mt-4">
                             <h4 className="text-xs font-bold text-slate-400 mb-2">Evidence</h4>
-                            <p className="text-xs text-slate-400 italic">No evidence loaded (Endpoint Needed)</p>
+                            {dispute.evidence && dispute.evidence.length > 0 ? (
+                                <div className="space-y-2">
+                                    {dispute.evidence.map((ev: any) => (
+                                        <div key={ev.id} className="text-sm bg-slate-50 p-2 rounded border border-slate-100">
+                                            <a href={ev.fileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">
+                                                {ev.fileUrl}
+                                            </a>
+                                            {ev.description && <p className="text-xs text-slate-500 mt-1">{ev.description}</p>}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-slate-400 italic">No evidence uploaded</p>
+                            )}
                         </div>
                     </div>
 

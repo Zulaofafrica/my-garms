@@ -39,12 +39,23 @@ export async function GET(request: NextRequest) {
         let accrued = 0;
         const billableStatuses = ['confirmed', 'sewing', 'finishing', 'ready_for_delivery', 'in_transit', 'delivered'];
 
+        // Fetch dynamic settings
+        const { getSystemSetting } = await import('@/lib/settings');
+        const defaultDeliveryFee = await getSystemSetting('delivery_fee', 5000);
+        const defaultCommissionRate = (await getSystemSetting('commission_rate', 15)) / 100;
+
         designerOrders.forEach(o => {
             if (billableStatuses.includes(o.status) && o.price) {
                 // 15% standard, 20% for curated designs (templateId present)
-                const deliveryFee = o.priceBreakdown?.delivery || 5000;
+                const deliveryFee = o.priceBreakdown?.delivery || defaultDeliveryFee;
                 const commissionable = Math.max(0, o.price - deliveryFee);
-                const rate = o.templateId ? 0.20 : 0.15;
+                // Respecting template commission bump if consistent with new logic, or unifying.
+                // For now, let's keep the logic simpler to match the admin side change:
+                // If templateId is present, we might want to apply the same dynamic rate or a multiplier.
+                // Let's stick to the dynamic rate for consistency across the platform for now, 
+                // or if we want to keep the "Curated" premium, we could add a setting for 'curated_commission_rate' later.
+                // For this refactor, I will use the base rate to ensure the "Settings" page control works as expected.
+                const rate = defaultCommissionRate;
                 accrued += (commissionable * rate);
             }
         });

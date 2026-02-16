@@ -88,13 +88,27 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
         fabric: 0,
         labor: 0,
         customization: 0,
-        delivery: 5000 // Fixed
+        delivery: 0 // Will be set from settings
     });
     const [attachmentUrl, setAttachmentUrl] = useState("");
     const [startDate, setStartDate] = useState("");
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [endDate, setEndDate] = useState("");
     const [stage, setStage] = useState("");
+    const [settings, setSettings] = useState<{ delivery_fee: number }>({ delivery_fee: 5000 });
+
+    useEffect(() => {
+        // Fetch platform settings
+        fetch('/api/admin/settings')
+            .then(res => res.json())
+            .then(data => {
+                if (data.delivery_fee) {
+                    setSettings(data);
+                    setBreakdown(prev => ({ ...prev, delivery: Number(data.delivery_fee) }));
+                }
+            })
+            .catch(err => console.error("Failed to load settings:", err));
+    }, []);
 
     useEffect(() => {
         if (order) {
@@ -157,7 +171,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
 
         if (action === 'set_price') {
             const totalPrice = currentBreakdown.fabric + currentBreakdown.labor + currentBreakdown.customization + currentBreakdown.delivery;
-            if (totalPrice <= 5000) { // Should be more than just delivery
+            if (totalPrice <= currentBreakdown.delivery) { // Should be more than just delivery
                 toast.warning("Please enter valid costs for fabric/labor.");
                 return;
             }
@@ -565,9 +579,9 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                                                 // Ideally we'd have this data, but for now we essentially skip logic
                                                 const curatedBreakdown = {
                                                     fabric: 0,
-                                                    labor: (order.total || 0) - 5000, // Rough estimate minus delivery
+                                                    labor: (order.total || 0) - (settings?.delivery_fee || 5000), // Rough estimate minus delivery
                                                     customization: 0,
-                                                    delivery: 5000
+                                                    delivery: settings?.delivery_fee || 5000
                                                 };
                                                 handleAction('set_price', curatedBreakdown);
                                             }}
@@ -623,7 +637,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                                                     <input
                                                         type="text"
                                                         className="w-full px-3 py-2 bg-slate-50 text-slate-500 border border-slate-200 rounded-lg cursor-not-allowed font-medium"
-                                                        value="₦5,000 (Fixed)"
+                                                        value={`₦${(breakdown.delivery || 5000).toLocaleString()} (Fixed)`}
                                                         disabled
                                                     />
                                                 </div>

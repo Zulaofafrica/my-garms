@@ -59,6 +59,16 @@ export default function DesignerDashboard() {
     const toast = useToast();
     const [user, setUser] = useState<User | null>(null);
     const [orders, setOrders] = useState<Order[]>([]);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [stats, setStats] = useState({
+        pending: 0,
+        reviewing: 0,
+        changes: 0,
+        total: 0,
+        revenue: 0
+    });
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [isPaying, setIsPaying] = useState(false);
@@ -113,8 +123,10 @@ export default function DesignerDashboard() {
                 }
 
                 // Load orders
-                const data = await designerApi.listOrders();
+                const data = await designerApi.listOrders(1, 5);
                 setOrders(data.orders);
+                setHasMore(data.hasMore);
+                if (data.stats) setStats(data.stats);
 
                 // Load Finance Stats
                 const finance = await fetch('/api/designer/finance').then(res => res.json());
@@ -141,18 +153,23 @@ export default function DesignerDashboard() {
         order.fabricName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const stats = {
-        pending: orders.filter(o => o.status === 'pending').length,
-        reviewing: orders.filter(o => o.status === 'reviewing').length,
-        changes: orders.filter(o => o.status === 'changes_requested').length,
-        total: orders.length,
-        revenue: orders.reduce((sum, o) => {
-            if (!o.price) return sum;
-            if (['confirmed', 'sewing', 'finishing', 'ready_for_delivery', 'in_transit', 'delivered'].includes(o.status)) {
-                return sum + o.price;
-            }
-            return sum;
-        }, 0)
+    const handleLoadMore = async () => {
+        if (loadingMore || !hasMore) return;
+        setLoadingMore(true);
+        try {
+            const nextPage = page + 1;
+            const data = await designerApi.listOrders(nextPage, 5);
+            setOrders(prev => [...prev, ...data.orders]);
+            setHasMore(data.hasMore);
+            setPage(nextPage);
+            // We can update stats here too if needed, but they shouldn't change much unless new orders came in
+            if (data.stats) setStats(data.stats);
+        } catch (err) {
+            console.error("Failed to load more orders", err);
+            toast.error("Failed to load older orders");
+        } finally {
+            setLoadingMore(false);
+        }
     };
 
     const handleOpenPayment = () => {
@@ -385,6 +402,24 @@ export default function DesignerDashboard() {
                         </div>
                     )}
                 </div>
+                {hasMore && (
+                    <div className="flex justify-center mt-6">
+                        <button
+                            onClick={handleLoadMore}
+                            disabled={loadingMore}
+                            className="px-6 py-3 rounded-xl border border-white/10 bg-slate-900/50 hover:bg-slate-800 text-white font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {loadingMore ? (
+                                <>
+                                    <div className={styles.spinner} />
+                                    Loading...
+                                </>
+                            ) : (
+                                "Load More Requests"
+                            )}
+                        </button>
+                    </div>
+                )}
             </section>
             {/* Payment Modal */}
             {showPaymentModal && (

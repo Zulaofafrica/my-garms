@@ -30,10 +30,13 @@ export default function ProfilePage() {
     const [view, setView] = useState<"measurements" | "orders" | "addresses">("measurements");
     const [profiles, setProfiles] = useState<ApiProfile[]>([]);
     const [orders, setOrders] = useState<ApiOrder[]>([]);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(false);
     const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
     const [isLoading, setIsLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     // Initial load: Auth, Profiles, and Orders
     useEffect(() => {
@@ -51,11 +54,13 @@ export default function ProfilePage() {
                 // Fetch profiles and orders in parallel
                 const [profilesData, ordersData] = await Promise.all([
                     profilesApi.list(),
-                    ordersApi.list()
+                    ordersApi.list(1, 3) // Fetch first page with smaller limit for testing
                 ]);
 
+                // console.log("[Profile] Orders Data:", ordersData);
                 setProfiles(profilesData.profiles);
                 setOrders(ordersData.orders);
+                setHasMore(ordersData.hasMore);
 
                 if (profilesData.profiles.length > 0) {
                     setActiveProfileId(profilesData.profiles[0].id);
@@ -167,6 +172,23 @@ export default function ProfilePage() {
         }
     };
 
+    const handleLoadMore = async () => {
+        if (loadingMore || !hasMore) return;
+        setLoadingMore(true);
+        try {
+            const nextPage = page + 1;
+            const data = await ordersApi.list(nextPage, 3);
+            setOrders(prev => [...prev, ...data.orders]);
+            setHasMore(data.hasMore);
+            setPage(nextPage);
+        } catch (err) {
+            console.error("Failed to load more orders", err);
+            toast.error("Failed to load older orders");
+        } finally {
+            setLoadingMore(false);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
@@ -192,9 +214,9 @@ export default function ProfilePage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-12 pb-16">
                     {/* Sidebar */}
-                    <aside className="flex flex-col gap-2 min-h-[480px]">
+                    <aside className="flex flex-row lg:flex-col gap-2 lg:min-h-[480px] overflow-x-auto lg:overflow-visible pb-4 lg:pb-0 items-center lg:items-stretch no-scrollbar">
                         <div
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all ${view === "measurements"
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all whitespace-nowrap ${view === "measurements"
                                 ? "bg-indigo-500/10 text-indigo-300 font-medium border border-indigo-500/20"
                                 : "text-slate-400 hover:text-white hover:bg-white/5"
                                 }`}
@@ -204,7 +226,7 @@ export default function ProfilePage() {
                             <span>Profile & Measurements</span>
                         </div>
                         <div
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all ${view === "orders"
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all whitespace-nowrap ${view === "orders"
                                 ? "bg-indigo-500/10 text-indigo-300 font-medium border border-indigo-500/20"
                                 : "text-slate-400 hover:text-white hover:bg-white/5"
                                 }`}
@@ -214,7 +236,7 @@ export default function ProfilePage() {
                             <span>Orders</span>
                         </div>
                         <div
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all ${view === "addresses"
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all whitespace-nowrap ${view === "addresses"
                                 ? "bg-indigo-500/10 text-indigo-300 font-medium border border-indigo-500/20"
                                 : "text-slate-400 hover:text-white hover:bg-white/5"
                                 }`}
@@ -223,15 +245,16 @@ export default function ProfilePage() {
                             <MapPin size={20} />
                             <span>Saved Addresses</span>
                         </div>
-                        <div className="mt-auto pt-4 border-t border-white/10">
-                            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all font-medium" onClick={() => {
+                        <div className="lg:mt-auto lg:pt-4 lg:border-t border-white/10 ml-auto lg:ml-0">
+                            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all font-medium whitespace-nowrap" onClick={() => {
                                 authApi.logout().then(() => {
                                     router.push("/");
                                     router.refresh();
                                 });
                             }}>
                                 <LogOut size={20} />
-                                <span>Sign Out</span>
+                                <span className="hidden lg:inline">Sign Out</span>
+                                <span className="lg:hidden">Exit</span>
                             </button>
                         </div>
                     </aside>
@@ -389,6 +412,24 @@ export default function ProfilePage() {
                                         </div>
                                     )}
                                 </div>
+                                {hasMore && (
+                                    <div className="flex justify-center mt-6">
+                                        <button
+                                            onClick={handleLoadMore}
+                                            disabled={loadingMore}
+                                            className="px-6 py-3 rounded-xl border border-white/10 bg-slate-900/50 hover:bg-slate-800 text-white font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {loadingMore ? (
+                                                <>
+                                                    <div className={styles.spinner} />
+                                                    Loading...
+                                                </>
+                                            ) : (
+                                                "Load More Orders"
+                                            )}
+                                        </button>
+                                    </div>
+                                )}
                             </section>
                         ) : (
                             <section>

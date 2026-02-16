@@ -244,6 +244,35 @@ export interface DbEmailJob {
     processedAt?: string;
 }
 
+export interface DbSystemSetting {
+    key: string; // Acts as ID
+    val: any;
+    description?: string;
+    updated_at: Date;
+}
+
+export interface DbFabric {
+    id: string;
+    name: string;
+    type: string;
+    price: number;
+    image: string;
+    color: string;
+    description: string;
+    inStock: boolean;
+    createdAt?: string;
+}
+
+export interface DbTemplate {
+    id: string;
+    name: string;
+    category: string;
+    image?: string;
+    basePrice?: number;
+    description?: string;
+    createdAt?: string;
+}
+
 function mapUser(row: any): DbUser {
     return {
         id: row.id,
@@ -257,6 +286,32 @@ function mapUser(row: any): DbUser {
         createdAt: row.created_at?.toISOString() || new Date().toISOString(),
         address: row.address,
         state: row.state,
+    };
+}
+
+function mapFabric(row: any): DbFabric {
+    return {
+        id: row.id,
+        name: row.name,
+        type: row.type,
+        price: Number(row.price),
+        image: row.image,
+        color: row.color,
+        description: row.description,
+        inStock: row.in_stock,
+        createdAt: row.created_at
+    };
+}
+
+function mapTemplate(row: any): DbTemplate {
+    return {
+        id: row.id,
+        name: row.name,
+        category: row.category,
+        image: row.image,
+        basePrice: row.base_price ? Number(row.base_price) : undefined,
+        description: row.description,
+        createdAt: row.created_at
     };
 }
 
@@ -405,6 +460,15 @@ function mapNotification(row: any): DbNotification {
     };
 }
 
+function mapSystemSetting(row: any): DbSystemSetting {
+    return {
+        key: row.key,
+        value: row.val, // 'value' is a reserved word in some SQL, so using 'val' in DB
+        description: row.description,
+        updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
+    };
+}
+
 function mapCuratedDesign(row: any): DbCuratedDesign {
     return {
         id: row.id,
@@ -462,6 +526,15 @@ export async function readCollection<T>(collection: string): Promise<T[]> {
         } else if (collection === 'addresses') {
             const { rows } = await query('SELECT * FROM addresses');
             return rows.map(mapAddress) as unknown as T[];
+        } else if (collection === 'system_settings') {
+            const { rows } = await query('SELECT * FROM system_settings');
+            return rows.map(mapSystemSetting) as unknown as T[];
+        } else if (collection === 'fabrics') {
+            const { rows } = await query('SELECT * FROM fabrics');
+            return rows.map(mapFabric) as unknown as T[];
+        } else if (collection === 'templates') {
+            const { rows } = await query('SELECT * FROM templates');
+            return rows.map(mapTemplate) as unknown as T[];
         }
         return [];
     } catch (error) {
@@ -502,6 +575,9 @@ export async function findById<T extends { id: string }>(
         } else if (collection === 'curated_designs') {
             const { rows } = await query('SELECT * FROM curated_designs WHERE id = $1 LIMIT 1', [id]);
             return rows.length ? (mapCuratedDesign(rows[0]) as unknown as T) : null;
+        } else if (collection === 'system_settings') {
+            const { rows } = await query('SELECT * FROM system_settings WHERE key = $1 LIMIT 1', [id]);
+            return rows.length ? (mapSystemSetting(rows[0]) as unknown as T) : null;
         }
         return null;
     } catch (error) {
@@ -660,6 +736,33 @@ export async function insertOne<T extends { id: string }>(
                 'INSERT INTO curated_designs (id, title, category, style_aesthetic, description, base_price_range, complexity_level, designer_skill_level, default_fabric, images, is_active, admin_notes, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)',
                 [d.id, d.title, d.category, d.style_aesthetic, d.description, d.base_price_range, d.complexity_level, d.designer_skill_level, d.default_fabric, JSON.stringify(d.images), d.is_active, d.admin_notes, d.created_at, d.updated_at]
             );
+        } else if (collection === 'system_settings') {
+            const s = item as unknown as DbSystemSetting;
+            const queryText = `
+                INSERT INTO system_settings (key, val, description, updated_at)
+                VALUES ($1, $2, $3, NOW())
+                RETURNING *
+            `;
+            const { rows } = await query(queryText, [s.key, JSON.stringify(s.val), s.description]);
+            return mapSystemSetting(rows[0]) as unknown as T;
+        } else if (collection === 'fabrics') {
+            const f = item as unknown as DbFabric;
+            const queryText = `
+                INSERT INTO fabrics (id, name, type, price, image, color, description, in_stock, created_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+                RETURNING *
+            `;
+            const { rows } = await query(queryText, [f.id, f.name, f.type, f.price, f.image, f.color, f.description, f.inStock !== false]);
+            return mapFabric(rows[0]) as unknown as T;
+        } else if (collection === 'templates') {
+            const t = item as unknown as DbTemplate;
+            const queryText = `
+                INSERT INTO templates (id, name, category, image, base_price, description, created_at)
+                VALUES ($1, $2, $3, $4, $5, $6, NOW())
+                RETURNING *
+            `;
+            const { rows } = await query(queryText, [t.id, t.name, t.category, t.image, t.basePrice, t.description]);
+            return mapTemplate(rows[0]) as unknown as T;
         }
         return item;
     } catch (error) {
@@ -733,6 +836,12 @@ export async function updateOne<T extends { id: string }>(
             await query(
                 'UPDATE curated_designs SET title = $1, category = $2, style_aesthetic = $3, description = $4, base_price_range = $5, complexity_level = $6, designer_skill_level = $7, default_fabric = $8, images = $9, is_active = $10, admin_notes = $11, updated_at = $12 WHERE id = $13',
                 [d.title, d.category, d.style_aesthetic, d.description, d.base_price_range, d.complexity_level, d.designer_skill_level, d.default_fabric, JSON.stringify(d.images), d.is_active, d.admin_notes, new Date().toISOString(), id]
+            );
+        } else if (collection === 'system_settings') {
+            const s = merged as unknown as DbSystemSetting;
+            await query(
+                'UPDATE system_settings SET val = $1, description = $2, updated_at = $3 WHERE key = $4',
+                [JSON.stringify(s.value), s.description, new Date().toISOString(), id]
             );
         }
 
