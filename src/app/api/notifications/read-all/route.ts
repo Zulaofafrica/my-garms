@@ -14,7 +14,7 @@ export async function POST() {
         const unread = notifications.filter(n => !n.read);
 
         const updates = unread.map(n =>
-            updateOne<DbNotification>('notifications', n.id, { read: true })
+            updateOne('notifications', n.id, { read: true })
         );
 
         await Promise.all(updates);

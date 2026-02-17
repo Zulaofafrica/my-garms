@@ -283,13 +283,6 @@ export const designerApi = {
         });
     },
 
-    updateFabricStatus: async (id: string, status: 'shipped' | 'received') => {
-        return fetchApi<{ order: Order }>(`/designer/orders/${id}/fabric`, {
-            method: 'POST',
-            body: JSON.stringify({ status }),
-        });
-    },
-
     getSettings: async () => {
         return fetchApi<{ profile: any }>('/designer/profile');
     },
