@@ -93,7 +93,11 @@ export function Navbar() {
 
                 {/* Mobile Menu Toggle */}
                 <div className="flex items-center md:hidden">
-
+                    {user && (
+                        <div className="mr-2">
+                            <NotificationBadge />
+                        </div>
+                    )}
                     <Button
                         variant="ghost"
                         size="icon"

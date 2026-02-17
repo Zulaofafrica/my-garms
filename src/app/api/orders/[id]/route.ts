@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
-import { findById, DbOrder } from '@/lib/db';
+import { findById, findByField, DbOrder } from '@/lib/db';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -33,7 +33,31 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        return NextResponse.json({ order });
+        let designerDetails = undefined;
+        if (order.assignedDesignerId) {
+            const designerUser = await findById<any>('users', order.assignedDesignerId);
+            const designerProfile = await findByField<any>('designer_profiles', 'userId', order.assignedDesignerId);
+
+            if (designerUser) {
+                designerDetails = {
+                    name: `${designerUser.firstName} ${designerUser.lastName.charAt(0)}.`,
+                    photo: designerProfile?.profilePhoto,
+                    rating: designerProfile?.rating || 0,
+                    specialties: designerProfile?.specialties || [],
+                    status: designerProfile?.status || 'available',
+                    isVerified: designerUser.isVerified,
+                    workshopAddress: designerProfile?.workshopAddress,
+                    phoneNumber: designerProfile?.phoneNumber || designerUser.phoneNumber // Fallback if needed, though db schema says user has phone? db schema for user doesn't show phone explicitly in interface but maybe it's there? DbUser interface doesn't have phone. DbDesignerProfile has phoneNumber.
+                };
+            }
+        }
+
+        return NextResponse.json({
+            order: {
+                ...order,
+                designer: designerDetails
+            }
+        });
     } catch (error) {
         console.error('Get order error:', error);
         return NextResponse.json(

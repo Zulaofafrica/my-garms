@@ -31,11 +31,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const [accessCode, setAccessCode] = useState('');
     const [accessError, setAccessError] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
         checkSession();
     }, []);
+
+    // Close sidebar on route change (mobile)
+    useEffect(() => {
+        setIsSidebarOpen(false);
+    }, [pathname]);
 
     const checkSession = async () => {
         try {

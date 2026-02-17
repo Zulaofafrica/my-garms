@@ -164,6 +164,7 @@ export interface DbOrder {
     estimatedCompletionDate?: string;
     productionStartDate?: string;
     productionEndDate?: string;
+    fabricStatus?: 'pending' | 'shipped' | 'received';
     createdAt: string;
     updatedAt: string;
     commissionPaid?: boolean;

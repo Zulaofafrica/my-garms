@@ -177,7 +177,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
             }
         }
 
-        if (action !== 'set_price' && !comment.trim()) {
+        if (action !== 'set_price' && !(messageOverride || comment.trim())) {
             toast.warning("Please provide a comment for your feedback.");
             return;
         }
@@ -443,6 +443,46 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                         </section>
                     )}
 
+                    {/* Fabric Reception Card - FOR DESIGNERS */}
+                    {order.fabricSource === 'own' && order.status !== 'pending' && (!order.productionStage || order.productionStage === 'design_approved') && (
+                        <section className={styles.card} style={{ borderColor: order.fabricStatus === 'received' ? 'var(--green)' : 'var(--amber)', background: order.fabricStatus === 'received' ? 'rgba(34, 197, 94, 0.03)' : 'rgba(245, 158, 11, 0.03)' }}>
+                            <h2 className={styles.cardTitle} style={{ color: order.fabricStatus === 'received' ? 'var(--green)' : 'var(--amber)' }}>
+                                <Package size={20} /> Fabric Reception
+                            </h2>
+                            <div className={styles.feedbackForm}>
+                                <p className={styles.muted}>
+                                    {order.fabricStatus === 'received'
+                                        ? "You have confirmed receipt of the client's fabric."
+                                        : order.fabricStatus === 'shipped'
+                                            ? "Client has marked the fabric as SHIPPED. Confirm receipt once it arrives."
+                                            : "Client has not yet marked fabric as shipped."}
+                                </p>
+
+                                {order.fabricStatus !== 'received' && (
+                                    <button
+                                        className={`${styles.button} ${styles.approveBtn}`}
+                                        onClick={async () => {
+                                            setIsSubmitting(true);
+                                            try {
+                                                const data = await designerApi.updateFabricStatus(order.id, 'received');
+                                                setOrder(data.order);
+                                                toast.success("Fabric received!");
+                                            } catch (err) {
+                                                toast.error("Failed to update status");
+                                            } finally {
+                                                setIsSubmitting(false);
+                                            }
+                                        }}
+                                        disabled={isSubmitting}
+                                        style={{ width: '100%', justifyContent: 'center', marginTop: '1rem', background: 'var(--amber)', color: 'black' }}
+                                    >
+                                        <CheckCircle size={18} /> Confirm Fabric Received
+                                    </button>
+                                )}
+                            </div>
+                        </section>
+                    )}
+
                     {/* Production Control Card */}
                     {['paid_70', 'paid_100'].includes(order.paymentStatus || '') && (
                         <section className={styles.card}>
@@ -562,14 +602,16 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                                             </div>
                                         </div>
 
-                                        <div className={styles.inputGroup}>
-                                            <label className={styles.label}>Estimated Completion</label>
-                                            <input
-                                                type="date"
-                                                className={styles.input}
-                                                value={endDate}
-                                                onChange={(e) => setEndDate(e.target.value)}
-                                            />
+                                        <div className="mb-4">
+                                            <label className="text-xs font-semibold uppercase text-muted-foreground mb-1.5 block">Estimated Completion</label>
+                                            <div className="relative">
+                                                <input
+                                                    type="date"
+                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all font-medium text-gray-900"
+                                                    value={endDate}
+                                                    onChange={(e) => setEndDate(e.target.value)}
+                                                />
+                                            </div>
                                         </div>
 
                                         <button
@@ -601,11 +643,18 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                                                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">₦</span>
                                                     <input
                                                         type="number"
-                                                        className="w-full pl-8 pr-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
-                                                        value={breakdown.fabric || ''}
-                                                        onChange={(e) => setBreakdown({ ...breakdown, fabric: Number(e.target.value) })}
+                                                        className={`w-full pl-8 pr-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all ${order.fabricSource === 'own' ? 'bg-gray-100 cursor-not-allowed text-gray-400' : ''}`}
+                                                        value={order.fabricSource === 'own' ? 0 : (breakdown.fabric || '')}
+                                                        onChange={(e) => order.fabricSource !== 'own' && setBreakdown({ ...breakdown, fabric: Number(e.target.value) })}
+                                                        disabled={order.fabricSource === 'own'}
+                                                        title={order.fabricSource === 'own' ? "Client is providing fabric" : ""}
                                                     />
                                                 </div>
+                                                {order.fabricSource === 'own' && (
+                                                    <span className="text-[10px] text-amber-600 block mt-1 font-medium">
+                                                        Client providing fabric
+                                                    </span>
+                                                )}
                                             </div>
                                             <div>
                                                 <label className="text-xs font-semibold uppercase text-muted-foreground mb-1.5 block">Labor Cost</label>
@@ -654,14 +703,16 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                                             </span>
                                         </div>
 
-                                        <div className={styles.inputGroup}>
-                                            <label className={styles.label}>Estimated Completion</label>
-                                            <input
-                                                type="date"
-                                                className={styles.input}
-                                                value={endDate}
-                                                onChange={(e) => setEndDate(e.target.value)}
-                                            />
+                                        <div className="mb-4">
+                                            <label className="text-xs font-semibold uppercase text-muted-foreground mb-1.5 block">Estimated Completion</label>
+                                            <div className="relative">
+                                                <input
+                                                    type="date"
+                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all font-medium text-gray-900"
+                                                    value={endDate}
+                                                    onChange={(e) => setEndDate(e.target.value)}
+                                                />
+                                            </div>
                                         </div>
                                         <button
                                             className={`${styles.button} ${styles.approveBtn}`}

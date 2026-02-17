@@ -61,6 +61,28 @@ export async function POST(request: NextRequest) {
 
         await insertOne('users', newUser);
 
+        // Auto-save address to address book if provided
+        if (body.address) {
+            try {
+                const newAddress: any = {
+                    id: generateId(),
+                    userId: newUser.id,
+                    label: 'Home',
+                    fullName: `${firstName} ${lastName}`,
+                    phone: '', // Phone not collected on signup
+                    address: body.address,
+                    city: '', // City not collected on signup
+                    state: body.state || '',
+                    isDefault: true,
+                    createdAt: new Date().toISOString()
+                };
+                await insertOne('addresses', newAddress);
+            } catch (err) {
+                console.error("Failed to auto-save signup address", err);
+                // Continue execution, don't fail signup
+            }
+        }
+
         // Audit Log
         await logAudit(newUser.id, 'user.signup', 'User registered successfully', newUser.id, newUser.email);
 

@@ -102,132 +102,159 @@ export default function DesignerRequestsPage() {
                     </div>
                 ) : (
                     <div className="grid gap-6">
-                        {requests.map(request => (
-                            <div key={request.id} className="bg-white/5 border border-white/10 rounded-xl p-6 flex flex-col md:flex-row gap-6 hover:border-indigo-500/50 transition-colors">
-                                <div className="flex-grow space-y-4">
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-medium mb-2 border border-indigo-500/30">
-                                                <Clock size={12} /> Expires in 24h
+                        {requests.filter(request => {
+                            const created = new Date(request.createdAt).getTime();
+                            const now = Date.now();
+                            const expiresAt = created + (24 * 60 * 60 * 1000);
+                            return now < expiresAt;
+                        }).map(request => {
+                            const getTimeLeft = () => {
+                                const created = new Date(request.createdAt).getTime();
+                                const now = Date.now();
+                                const expiresAt = created + (24 * 60 * 60 * 1000);
+                                const diff = expiresAt - now;
+
+                                if (diff <= 0) return "Expired";
+
+                                const hours = Math.floor(diff / (1000 * 60 * 60));
+                                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+                                return `${hours}h ${minutes}m`;
+                            };
+
+                            const timeLeft = getTimeLeft();
+                            const isUrgent = timeLeft.includes('h') && parseInt(timeLeft) < 4; // Simple check for < 4 hours
+
+                            return (
+                                <div key={request.id} className="bg-white/5 border border-white/10 rounded-xl p-6 flex flex-col md:flex-row gap-6 hover:border-indigo-500/50 transition-colors">
+                                    <div className="flex-grow space-y-4">
+                                        <div className="flex items-start justify-between">
+                                            <div>
+                                                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mb-2 border ${isUrgent
+                                                        ? 'bg-red-500/20 text-red-300 border-red-500/30'
+                                                        : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                                                    }`}>
+                                                    <Clock size={12} /> Expires in {timeLeft}
+                                                </div>
+                                                <h3 className="text-xl font-bold text-white mb-1">
+                                                    {request.templateName || "Custom Request"}
+                                                </h3>
+                                                <p className="text-slate-400 text-sm">
+                                                    Order ID: <span className="font-mono text-slate-500">#{request.id.slice(0, 8)}</span>
+                                                </p>
                                             </div>
-                                            <h3 className="text-xl font-bold text-white mb-1">
-                                                {request.templateName || "Custom Request"}
-                                            </h3>
-                                            <p className="text-slate-400 text-sm">
-                                                Order ID: <span className="font-mono text-slate-500">#{request.id.slice(0, 8)}</span>
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                                        <div className="bg-white/5 p-3 rounded-lg">
-                                            <span className="block text-slate-500 text-xs uppercase tracking-wider mb-1 flex items-center gap-1">
-                                                <Tag size={10} /> Category
-                                            </span>
-                                            <span className="text-white font-medium capitalize">{request.category || "Unspecified"}</span>
-                                        </div>
-                                        <div className="bg-white/5 p-3 rounded-lg">
-                                            <span className="block text-slate-500 text-xs uppercase tracking-wider mb-1 flex items-center gap-1">
-                                                <Shirt size={10} /> Fabric Source
-                                            </span>
-                                            <span className="text-white font-medium capitalize">{request.fabricSource || "Unsure"}</span>
-                                        </div>
-                                        <div className="bg-white/5 p-3 rounded-lg">
-                                            <span className="block text-slate-500 text-xs uppercase tracking-wider mb-1 flex items-center gap-1">
-                                                <Gauge size={10} /> Complexity
-                                            </span>
-                                            <span className={`font-medium capitalize ${request.complexity === 'detailed' ? 'text-purple-400' : 'text-white'}`}>
-                                                {request.complexity || "Moderate"}
-                                            </span>
-                                        </div>
-                                        <div className="bg-white/5 p-3 rounded-lg">
-                                            <span className="block text-slate-500 text-xs uppercase tracking-wider mb-1 flex items-center gap-1">
-                                                <Zap size={10} /> Urgency
-                                            </span>
-                                            <span className={`font-medium capitalize ${request.urgency === 'urgent' ? 'text-red-400' : 'text-white'}`}>
-                                                {request.urgency || "Standard"}
-                                            </span>
-                                        </div>
-                                        <div className="bg-white/5 p-3 rounded-lg">
-                                            <span className="block text-slate-500 text-xs uppercase tracking-wider mb-1">Fabric Type</span>
-                                            <span className="text-white font-medium">{request.fabricName}</span>
-                                        </div>
-                                        <div className="bg-white/5 p-3 rounded-lg">
-                                            <span className="block text-slate-500 text-xs uppercase tracking-wider mb-1">Style</span>
-                                            <span className="text-white font-medium">{request.style || "Standard"}</span>
-                                        </div>
-                                        <div className="bg-white/5 p-3 rounded-lg">
-                                            <span className="block text-slate-500 text-xs uppercase tracking-wider mb-1">Budget</span>
-                                            <span className="text-white font-medium flex items-center gap-1">
-                                                {request.total > 0
-                                                    ? `~₦${request.total.toLocaleString()}`
-                                                    : (request.budgetRange
-                                                        ? request.budgetRange === 'budget' ? 'Economy'
-                                                            : request.budgetRange === 'standard' ? 'Standard'
-                                                                : 'Premium'
-                                                        : "To Quote")
-                                                }
-                                            </span>
                                         </div>
 
-                                        {/* Images Preview - Inside Grid */}
-                                        {request.images && request.images.length > 0 && (
-                                            <div className="relative aspect-square rounded-lg overflow-hidden border border-white/10">
-                                                <img src={request.images[0]} alt="Ref" className="object-cover w-full h-full" />
-                                                {request.images.length > 1 && (
-                                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-xs font-bold text-white">
-                                                        +{request.images.length - 1}
-                                                    </div>
-                                                )}
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                            <div className="bg-white/5 p-3 rounded-lg">
+                                                <span className="block text-slate-500 text-xs uppercase tracking-wider mb-1 flex items-center gap-1">
+                                                    <Tag size={10} /> Category
+                                                </span>
+                                                <span className="text-white font-medium capitalize">{request.category || "Unspecified"}</span>
+                                            </div>
+                                            <div className="bg-white/5 p-3 rounded-lg">
+                                                <span className="block text-slate-500 text-xs uppercase tracking-wider mb-1 flex items-center gap-1">
+                                                    <Shirt size={10} /> Fabric Source
+                                                </span>
+                                                <span className="text-white font-medium capitalize">{request.fabricSource || "Unsure"}</span>
+                                            </div>
+                                            <div className="bg-white/5 p-3 rounded-lg">
+                                                <span className="block text-slate-500 text-xs uppercase tracking-wider mb-1 flex items-center gap-1">
+                                                    <Gauge size={10} /> Complexity
+                                                </span>
+                                                <span className={`font-medium capitalize ${request.complexity === 'detailed' ? 'text-purple-400' : 'text-white'}`}>
+                                                    {request.complexity || "Moderate"}
+                                                </span>
+                                            </div>
+                                            <div className="bg-white/5 p-3 rounded-lg">
+                                                <span className="block text-slate-500 text-xs uppercase tracking-wider mb-1 flex items-center gap-1">
+                                                    <Zap size={10} /> Urgency
+                                                </span>
+                                                <span className={`font-medium capitalize ${request.urgency === 'urgent' ? 'text-red-400' : 'text-white'}`}>
+                                                    {request.urgency || "Standard"}
+                                                </span>
+                                            </div>
+                                            <div className="bg-white/5 p-3 rounded-lg">
+                                                <span className="block text-slate-500 text-xs uppercase tracking-wider mb-1">Fabric Type</span>
+                                                <span className="text-white font-medium">{request.fabricName}</span>
+                                            </div>
+                                            <div className="bg-white/5 p-3 rounded-lg">
+                                                <span className="block text-slate-500 text-xs uppercase tracking-wider mb-1">Style</span>
+                                                <span className="text-white font-medium">{request.style || "Standard"}</span>
+                                            </div>
+                                            <div className="bg-white/5 p-3 rounded-lg">
+                                                <span className="block text-slate-500 text-xs uppercase tracking-wider mb-1">Budget</span>
+                                                <span className="text-white font-medium flex items-center gap-1">
+                                                    {request.total > 0
+                                                        ? `~₦${request.total.toLocaleString()}`
+                                                        : (request.budgetRange
+                                                            ? request.budgetRange === 'budget' ? 'Economy'
+                                                                : request.budgetRange === 'standard' ? 'Standard'
+                                                                    : 'Premium'
+                                                            : "To Quote")
+                                                    }
+                                                </span>
+                                            </div>
+
+                                            {/* Images Preview - Inside Grid */}
+                                            {request.images && request.images.length > 0 && (
+                                                <div className="relative aspect-square rounded-lg overflow-hidden border border-white/10">
+                                                    <img src={request.images[0]} alt="Ref" className="object-cover w-full h-full" />
+                                                    {request.images.length > 1 && (
+                                                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-xs font-bold text-white">
+                                                            +{request.images.length - 1}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Curated Design Badge & Commission Note - Outside Grid */}
+                                        {request.templateId && !['custom', 'custom-template'].includes(request.templateId) && (
+                                            <div className="flex items-center gap-3 bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
+                                                <div className="bg-purple-500 text-white text-xs font-bold px-2 py-1 rounded">
+                                                    CURATED DESIGN
+                                                </div>
+                                                <p className="text-purple-200 text-xs">
+                                                    <span className="font-semibold">Note:</span> Price is fixed by platform.
+                                                    <span className="text-white bg-purple-500/20 px-1 rounded ml-1">20% Commission</span> applies.
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {request.notes && (
+                                            <div className="bg-slate-900/50 p-3 rounded-lg border border-white/5">
+                                                <span className="text-xs text-slate-500 uppercase block mb-1">Customer Notes</span>
+                                                <p className="text-slate-300 text-sm italic">"{request.notes}"</p>
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* Curated Design Badge & Commission Note - Outside Grid */}
-                                    {request.templateId && !['custom', 'custom-template'].includes(request.templateId) && (
-                                        <div className="flex items-center gap-3 bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
-                                            <div className="bg-purple-500 text-white text-xs font-bold px-2 py-1 rounded">
-                                                CURATED DESIGN
-                                            </div>
-                                            <p className="text-purple-200 text-xs">
-                                                <span className="font-semibold">Note:</span> Price is fixed by platform.
-                                                <span className="text-white bg-purple-500/20 px-1 rounded ml-1">20% Commission</span> applies.
-                                            </p>
-                                        </div>
-                                    )}
-
-                                    {request.notes && (
-                                        <div className="bg-slate-900/50 p-3 rounded-lg border border-white/5">
-                                            <span className="text-xs text-slate-500 uppercase block mb-1">Customer Notes</span>
-                                            <p className="text-slate-300 text-sm italic">"{request.notes}"</p>
-                                        </div>
-                                    )}
+                                    <div className="flex md:flex-col gap-3 justify-center min-w-[140px]">
+                                        <button
+                                            onClick={() => handleAccept(request.id)}
+                                            disabled={!!actionLoading}
+                                            className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 px-4 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {actionLoading === request.id ? (
+                                                "Processing..."
+                                            ) : (
+                                                <>
+                                                    <Check size={18} /> Accept Job
+                                                </>
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={() => handleDecline(request.id)}
+                                            disabled={!!actionLoading}
+                                            className="flex-1 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-all border border-white/10"
+                                        >
+                                            <X size={18} /> Decline
+                                        </button>
+                                    </div>
                                 </div>
-
-                                <div className="flex md:flex-col gap-3 justify-center min-w-[140px]">
-                                    <button
-                                        onClick={() => handleAccept(request.id)}
-                                        disabled={!!actionLoading}
-                                        className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 px-4 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {actionLoading === request.id ? (
-                                            "Processing..."
-                                        ) : (
-                                            <>
-                                                <Check size={18} /> Accept Job
-                                            </>
-                                        )}
-                                    </button>
-                                    <button
-                                        onClick={() => handleDecline(request.id)}
-                                        disabled={!!actionLoading}
-                                        className="flex-1 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-all border border-white/10"
-                                    >
-                                        <X size={18} /> Decline
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>

@@ -44,11 +44,16 @@ export function ChatInterface({
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+        }
     };
 
     useEffect(() => {
-        scrollToBottom();
+        // Only scroll if messages exist to avoid initial layout shift or weird behavior
+        if (feedbackLog.length > 0) {
+            scrollToBottom();
+        }
     }, [feedbackLog]);
 
     const handleSubmit = async (e?: React.FormEvent) => {
@@ -218,8 +223,8 @@ export function ChatInterface({
                         type="button"
                         onClick={() => setShowUpload(!showUpload)}
                         className={`p-2.5 rounded-lg transition-colors ${attachment || showUpload
-                                ? 'bg-indigo-500/20 text-indigo-500'
-                                : attachmentButtonClass
+                            ? 'bg-indigo-500/20 text-indigo-500'
+                            : attachmentButtonClass
                             }`}
                         title="Add Attachment"
                     >
@@ -243,8 +248,8 @@ export function ChatInterface({
                         type="submit"
                         disabled={(!message.trim() && !attachment) || isSending}
                         className={`p-2.5 rounded-lg transition-all ${(!message.trim() && !attachment) || isSending
-                                ? `${inputButtonDisabledClass} cursor-not-allowed`
-                                : 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-500 hover:scale-105 active:scale-95'
+                            ? `${inputButtonDisabledClass} cursor-not-allowed`
+                            : 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-500 hover:scale-105 active:scale-95'
                             }`}
                     >
                         <Send size={18} />

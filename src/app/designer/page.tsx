@@ -16,7 +16,9 @@ import {
     X,
     CreditCard,
     AlertTriangle,
-    Star
+    Star,
+    UserCircle,
+    BadgeCheck
 } from "lucide-react";
 import { designerApi, authApi, Order, User } from "@/lib/api-client";
 import styles from "./designer.module.css";
@@ -85,6 +87,11 @@ export default function DesignerDashboard() {
         proofUrl: '',
         notes: ''
     });
+
+    // Calculate profile completion
+    const isProfileComplete = designerProfile &&
+        ['profilePhoto', 'bankName', 'accountNumber', 'identificationUrl', 'workshopAddress', 'phoneNumber']
+            .every(field => !!designerProfile[field]);
 
     // Lock body scroll when modal is open
     useEffect(() => {
@@ -252,7 +259,12 @@ export default function DesignerDashboard() {
                             </div>
                         )}
                         <div className="flex flex-col">
-                            <span className="text-gray-900 font-bold leading-tight">{user?.firstName} {user?.lastName}</span>
+                            <div className="flex items-center gap-1">
+                                <span className="text-gray-900 font-bold leading-tight">{user?.firstName} {user?.lastName}</span>
+                                {user?.isVerified && (
+                                    <BadgeCheck className="w-4 h-4 text-blue-500 fill-blue-500/10" />
+                                )}
+                            </div>
                             <span className="text-xs text-slate-500 font-medium">Master Designer</span>
                             {designerProfile && (
                                 <div className="flex items-center gap-1 mt-0.5">
@@ -265,6 +277,28 @@ export default function DesignerDashboard() {
                     </div>
                 </div>
             </header>
+
+            {/* Profile Completion Prompt */}
+            {!isLoading && designerProfile && !isProfileComplete && (
+                <div className="mb-8 p-6 rounded-xl bg-orange-50/50 border border-orange-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div>
+                        <h3 className="text-xl font-bold text-orange-600 mb-2 flex items-center gap-2">
+                            <AlertTriangle className="w-5 h-5" />
+                            Complete Your Profile
+                        </h3>
+                        <p className="text-orange-800/80 max-w-2xl">
+                            You need to provide your payment details, ID, and workshop address to receive payouts and build trust with customers.
+                        </p>
+                    </div>
+                    <Link
+                        href="/designer/settings"
+                        className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-orange-500/20 w-full md:w-auto"
+                    >
+                        <UserCircle size={20} />
+                        Complete Profile
+                    </Link>
+                </div>
+            )}
 
             <div className="mb-8 p-6 rounded-xl bg-indigo-900 border border-indigo-500/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div className="mb-4 md:mb-0">

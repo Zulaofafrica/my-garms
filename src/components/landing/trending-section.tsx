@@ -60,9 +60,9 @@ async function TrendingGrid() {
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 md:grid md:grid-cols-3 md:pb-0 md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
             {designs.map((design: any) => (
-                <Link key={design.id} href={`/gallery/${design.id}`} className="group block">
+                <Link key={design.id} href={`/gallery/${design.id}`} className="group block w-[85vw] shrink-0 md:w-auto snap-center">
                     <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-muted">
                         {design.images && design.images[0] ? (
                             <img

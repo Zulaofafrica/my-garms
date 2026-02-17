@@ -165,16 +165,16 @@ export default function UserManagementPage() {
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden overflow-x-auto">
                 <table className="w-full text-left">
                     <thead className="bg-slate-50 border-b border-slate-200">
                         <tr>
-                            <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">User</th>
-                            <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Role</th>
-                            <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Status</th>
-                            <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Location</th>
-                            <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Joined</th>
-                            <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase">Actions</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">User</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">Role</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">Status</th>
+                            <th className="hidden md:table-cell px-6 py-4 text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">Location</th>
+                            <th className="hidden md:table-cell px-6 py-4 text-xs font-semibold text-slate-500 uppercase whitespace-nowrap">Joined</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase whitespace-nowrap text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -217,7 +217,7 @@ export default function UserManagementPage() {
                                         {user.status || 'active'}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 text-sm text-slate-500">
+                                <td className="hidden md:table-cell px-6 py-4 text-sm text-slate-500">
                                     {(user.address || user.state) ? (
                                         <div className="flex flex-col">
                                             <span className="truncate max-w-[150px]">{user.address}</span>
@@ -227,7 +227,7 @@ export default function UserManagementPage() {
                                         <span className="text-slate-400 italic">N/A</span>
                                     )}
                                 </td>
-                                <td className="px-6 py-4 text-sm text-slate-500">
+                                <td className="hidden md:table-cell px-6 py-4 text-sm text-slate-500">
                                     {new Date(user.createdAt).toLocaleDateString()}
                                 </td>
                                 <td className="px-6 py-4">

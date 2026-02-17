@@ -32,6 +32,8 @@ export const authApi = {
         firstName: string;
         lastName: string;
         role?: 'customer' | 'designer';
+        address?: string;
+        state?: string;
     }) => {
         return fetchApi<{ user: User; message: string }>('/auth/signup', {
             method: 'POST',
@@ -166,6 +168,13 @@ export const ordersApi = {
         return fetchApi<{ order: Order; message: string }>(`/orders/${id}/rate`, {
             method: 'POST',
             body: JSON.stringify(data),
+        });
+    },
+
+    updateFabricStatus: async (id: string, status: 'shipped' | 'received') => {
+        return fetchApi<{ order: Order }>(`/designer/orders/${id}/fabric`, {
+            method: 'POST',
+            body: JSON.stringify({ status }),
         });
     },
 
@@ -441,6 +450,7 @@ export interface Profile {
     measurements: Record<string, string>;
     createdAt: string;
     updatedAt: string;
+    isVerified?: boolean;
 }
 
 export interface FeedbackLogEntry {
@@ -510,9 +520,20 @@ export interface Order {
     estimatedCompletionDate?: string;
     productionStartDate?: string;
     productionEndDate?: string;
+    fabricStatus?: 'pending' | 'shipped' | 'received';
     createdAt: string;
     updatedAt: string;
     commissionPaid?: boolean;
     rating?: number;
     review?: string;
+    designer?: {
+        name: string;
+        photo?: string;
+        rating?: number;
+        specialties?: string[];
+        status?: string;
+        isVerified?: boolean;
+        workshopAddress?: string;
+        phoneNumber?: string;
+    };
 }

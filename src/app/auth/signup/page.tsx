@@ -207,37 +207,41 @@ export default function SignUpPage() {
               </div>
             </div>
 
-            <div className={styles.inputGroup}>
-              <label htmlFor="address" className={styles.inputLabel}>Address</label>
-              <div className={styles.inputWrapper}>
-                <MapPin className={styles.inputIcon} size={18} />
-                <input
-                  id="address"
-                  name="address"
-                  type="text"
-                  placeholder="123 Fashion Street"
-                  value={formData.address}
-                  onChange={handleChange}
-                  className={styles.input}
-                />
-              </div>
-            </div>
+            {formData.role === "customer" && (
+              <>
+                <div className={styles.inputGroup}>
+                  <label htmlFor="address" className={styles.inputLabel}>Address</label>
+                  <div className={styles.inputWrapper}>
+                    <MapPin className={styles.inputIcon} size={18} />
+                    <input
+                      id="address"
+                      name="address"
+                      type="text"
+                      placeholder="123 Fashion Street"
+                      value={formData.address}
+                      onChange={handleChange}
+                      className={styles.input}
+                    />
+                  </div>
+                </div>
 
-            <div className={styles.inputGroup}>
-              <label htmlFor="state" className={styles.inputLabel}>State</label>
-              <div className={styles.inputWrapper}>
-                <MapPin className={styles.inputIcon} size={18} />
-                <input
-                  id="state"
-                  name="state"
-                  type="text"
-                  placeholder="Lagos"
-                  value={formData.state}
-                  onChange={handleChange}
-                  className={styles.input}
-                />
-              </div>
-            </div>
+                <div className={styles.inputGroup}>
+                  <label htmlFor="state" className={styles.inputLabel}>State</label>
+                  <div className={styles.inputWrapper}>
+                    <MapPin className={styles.inputIcon} size={18} />
+                    <input
+                      id="state"
+                      name="state"
+                      type="text"
+                      placeholder="Lagos"
+                      value={formData.state}
+                      onChange={handleChange}
+                      className={styles.input}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className={styles.inputGroup}>
               <label htmlFor="password" className={styles.inputLabel}>Password</label>

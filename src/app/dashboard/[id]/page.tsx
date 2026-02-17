@@ -13,7 +13,9 @@ import {
     MessageSquare,
     Image as ImageIcon,
     Package,
-    Star
+    Star,
+    User,
+    BadgeCheck
 } from "lucide-react";
 import { ordersApi, Order } from "@/lib/api-client";
 import { GlowButton } from "@/components/ui/glow-button";
@@ -293,6 +295,50 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
 
                     {/* Sidebar - Pricing, Payment & Action */}
                     <div className="space-y-6">
+                        {/* Designer Info Card */}
+                        {order.designer && (
+                            <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                                <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                    <User className="w-5 h-5 text-indigo-400" /> Your Designer
+                                </h2>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-16 h-16 rounded-full bg-slate-800 border-2 border-indigo-500/30 overflow-hidden flex-shrink-0">
+                                        {order.designer.photo ? (
+                                            <img src={order.designer.photo} alt={order.designer.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-indigo-300 font-bold text-xl">
+                                                {order.designer.name.charAt(0)}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-1">
+                                            <h3 className="text-white font-bold text-lg">{order.designer.name}</h3>
+                                            {order.designer.isVerified && (
+                                                <BadgeCheck className="w-5 h-5 text-blue-400 fill-blue-400/10" />
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-1 text-amber-400 text-sm mb-1">
+                                            <Star className="w-3.5 h-3.5 fill-current" />
+                                            <span>{order.designer.rating ? order.designer.rating.toFixed(1) : 'New'}</span>
+                                        </div>
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20 capitalize">
+                                            {order.designer.status || 'Active'}
+                                        </span>
+                                    </div>
+                                </div>
+                                {order.designer.specialties && order.designer.specialties.length > 0 && (
+                                    <div className="mt-4 flex flex-wrap gap-2">
+                                        {order.designer.specialties.slice(0, 3).map((spec, i) => (
+                                            <span key={i} className="text-xs bg-white/5 text-slate-300 px-2 py-1 rounded border border-white/5">
+                                                {spec}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         <div className="bg-gradient-to-br from-indigo-900/50 to-purple-900/50 border border-indigo-500/30 rounded-2xl p-6 sticky top-24">
                             <div className="flex items-center gap-2 mb-4 text-indigo-300">
                                 <Banknote className="w-5 h-5" />
@@ -558,6 +604,68 @@ export default function CustomerOrderDetailPage({ params }: CustomerOrderDetailP
                                                 </div>
                                             </div>
                                         )}
+                                    </div>
+                                )}
+
+                                {/* Fabric Logistics Card */}
+                                {order.fabricSource === 'own' && order.status !== 'pending' && order.status !== 'reviewing' && (
+                                    <div className="mt-6 bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
+                                        <h3 className="text-amber-400 font-bold mb-4 flex items-center gap-2">
+                                            <Package className="w-5 h-5" /> Fabric Logistics
+                                        </h3>
+
+                                        <div className="relative pl-4 border-l-2 border-white/10 space-y-8">
+                                            {/* Step 1: Shipping Address */}
+                                            <div className="relative">
+                                                <div className={`absolute -left-[21px] top-0 w-3 h-3 rounded-full border-2 ${order.fabricStatus ? 'bg-indigo-500 border-indigo-500' : 'bg-amber-500 border-amber-500'}`} />
+                                                <h4 className="text-white font-medium mb-1">1. Ship Your Fabric</h4>
+                                                <p className="text-sm text-slate-400 mb-3">
+                                                    Please ship your fabric to the designer's workshop:
+                                                </p>
+                                                <div className="bg-slate-900 p-3 rounded border border-white/10 text-sm">
+                                                    <p className="text-white font-bold">{order.designer?.name}</p>
+                                                    <p className="text-slate-300">{order.designer?.workshopAddress || "Address not available yet"}</p>
+                                                    <p className="text-slate-400 mt-1 text-xs">Ph: {order.designer?.phoneNumber || "N/A"}</p>
+                                                </div>
+                                                {!order.fabricStatus && (
+                                                    <button
+                                                        onClick={async () => {
+                                                            try {
+                                                                const updated = await ordersApi.updateFabricStatus(order.id, 'shipped');
+                                                                setOrder(updated.order);
+                                                                toast.success("Fabric marked as shipped!");
+                                                            } catch (e) {
+                                                                toast.error("Failed to update status");
+                                                            }
+                                                        }}
+                                                        className="mt-3 px-4 py-2 bg-amber-500 text-black font-semibold rounded-lg hover:bg-amber-400 transition-colors text-sm"
+                                                    >
+                                                        I've Sent It
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* Step 2: Confirmation */}
+                                            <div className="relative">
+                                                <div className={`absolute -left-[21px] top-0 w-3 h-3 rounded-full border-2 ${order.fabricStatus === 'received' ? 'bg-green-500 border-green-500' : 'bg-slate-900 border-white/20'}`} />
+                                                <h4 className={`font-medium mb-1 ${order.fabricStatus === 'received' ? 'text-green-400' : 'text-slate-500'}`}>
+                                                    2. Designer Confirmation
+                                                </h4>
+                                                {order.fabricStatus === 'received' ? (
+                                                    <p className="text-sm text-green-300/80">
+                                                        Fabric received by designer. Production can proceed!
+                                                    </p>
+                                                ) : order.fabricStatus === 'shipped' ? (
+                                                    <p className="text-sm text-amber-200/60 animate-pulse">
+                                                        Waiting for designer to acknowledge receipt...
+                                                    </p>
+                                                ) : (
+                                                    <p className="text-sm text-slate-500">
+                                                        Pending shipment...
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
 

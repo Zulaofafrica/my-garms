@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { designerApi } from "@/lib/api-client";
-import { ArrowLeft, Save, Briefcase, Power, Layers, Wallet, MapPin, Phone, Building2, UserCircle, Pencil, X } from "lucide-react";
+import { ArrowLeft, Save, Briefcase, Power, Layers, Wallet, MapPin, Phone, Building2, UserCircle, Pencil, X, BadgeCheck } from "lucide-react";
 import { CATEGORIES, STYLES } from "@/components/design-flow/CategoryStyleForm";
 
 import { SimpleImageUpload } from "@/components/ui/simple-image-upload";
@@ -30,7 +30,8 @@ export default function DesignerSettingsPage() {
         phoneNumber: '',
         identificationUrl: '',
         profilePhoto: '',
-        portfolioSamples: [] as string[]
+        portfolioSamples: [] as string[],
+        isVerified: false
     });
 
     const [newSpecialty, setNewSpecialty] = useState("");
@@ -58,7 +59,8 @@ export default function DesignerSettingsPage() {
                     phoneNumber: data.profile.phoneNumber || '',
                     identificationUrl: data.profile.identificationUrl || '',
                     profilePhoto: data.profile.profilePhoto || '',
-                    portfolioSamples: data.profile.portfolioSamples || []
+                    portfolioSamples: data.profile.portfolioSamples || [],
+                    isVerified: data.profile.isVerified || false
                 });
             }
         } catch (error) {
@@ -129,7 +131,12 @@ export default function DesignerSettingsPage() {
                                 <UserCircle size={24} />
                             </div>
                             <div>
-                                <h2 className="text-lg font-bold text-white">Public Profile</h2>
+                                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                    Public Profile
+                                    {formData.isVerified && (
+                                        <BadgeCheck className="w-5 h-5 text-blue-500 fill-blue-500/10" />
+                                    )}
+                                </h2>
                                 <p className="text-slate-400 text-sm">How you appear to customers.</p>
                             </div>
                         </div>

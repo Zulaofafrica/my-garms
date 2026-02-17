@@ -7,7 +7,7 @@ import { GlowButton } from "@/components/ui/glow-button";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { ArrowRight, ArrowLeft } from "lucide-react";
+import { ArrowRight, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { CategoryStyleForm } from "./CategoryStyleForm";
 import { DesignDetailForm } from "./DesignDetailForm";
 import { SpecForm } from "./spec-form";
@@ -62,7 +62,8 @@ function WizardContent() {
     // Guest Flow State
     const [gender, setGender] = useState<Gender>("male");
     const [measurements, setMeasurements] = useState<MaleMeasurements | FemaleMeasurements | any>({});
-    const [accountInfo, setAccountInfo] = useState({ firstName: "", lastName: "", email: "", password: "" });
+    const [accountInfo, setAccountInfo] = useState({ firstName: "", lastName: "", email: "", password: "", confirmPassword: "" });
+    const [showPassword, setShowPassword] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [templateData, setTemplateData] = useState<any>(null);
 
@@ -306,6 +307,12 @@ function WizardContent() {
                     return;
                 }
 
+                if (accountInfo.password !== accountInfo.confirmPassword) {
+                    toast.warning("Passwords do not match");
+                    setIsSubmitting(false);
+                    return;
+                }
+
                 const { orderId } = await authApi.guestOrder({
                     user: accountInfo,
                     profile: { gender, measurements },
@@ -394,8 +401,31 @@ function WizardContent() {
                                             value={accountInfo.lastName} onChange={e => handleAccountChange('lastName', e.target.value)} />
                                         <input type="email" placeholder="Email" className="w-full bg-slate-900 border border-white/10 rounded p-3 text-white"
                                             value={accountInfo.email} onChange={e => handleAccountChange('email', e.target.value)} />
-                                        <input type="password" placeholder="Password" className="w-full bg-slate-900 border border-white/10 rounded p-3 text-white"
-                                            value={accountInfo.password} onChange={e => handleAccountChange('password', e.target.value)} />
+
+                                        <div className="relative">
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                placeholder="Password"
+                                                className="w-full bg-slate-900 border border-white/10 rounded p-3 text-white pr-10"
+                                                value={accountInfo.password}
+                                                onChange={e => handleAccountChange('password', e.target.value)}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                                            >
+                                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
+
+                                        <input
+                                            type="password"
+                                            placeholder="Confirm Password"
+                                            className="w-full bg-slate-900 border border-white/10 rounded p-3 text-white"
+                                            value={accountInfo.confirmPassword}
+                                            onChange={e => handleAccountChange('confirmPassword', e.target.value)}
+                                        />
                                     </div>
                                 </div>
                             )}

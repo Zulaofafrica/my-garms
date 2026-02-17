@@ -29,7 +29,12 @@ export async function GET(request: NextRequest) {
             });
         }
 
-        return NextResponse.json({ profile });
+        return NextResponse.json({
+            profile: {
+                ...profile,
+                isVerified: user.isVerified
+            }
+        });
     } catch (error) {
         console.error('Get designer profile error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -2,9 +2,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getNotifications, markAsRead } from "@/lib/client-notifications";
+import { getNotifications, markAsRead, markAllAsRead } from "@/lib/client-notifications";
 import { DbNotification } from "@/lib/db";
-import { Bell, Check, Loader2 } from "lucide-react";
+import { Bell, Check, Loader2, CheckCheck } from "lucide-react";
 
 export default function NotificationsPage() {
     const [notifications, setNotifications] = useState<DbNotification[]>([]);
@@ -26,6 +26,15 @@ export default function NotificationsPage() {
         }
     };
 
+    const handleMarkAllRead = async () => {
+        const success = await markAllAsRead();
+        if (success) {
+            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+        }
+    };
+
+    const hasUnread = notifications.some(n => !n.read);
+
     if (isLoading) {
         return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="animate-spin text-slate-400" /></div>;
     }
@@ -42,6 +51,15 @@ export default function NotificationsPage() {
                     </h1>
                     <p className="text-slate-400">Stay updated on your orders and requests.</p>
                 </div>
+                {hasUnread && (
+                    <button
+                        onClick={handleMarkAllRead}
+                        className="ml-auto flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                    >
+                        <CheckCheck size={14} />
+                        Mark all as read
+                    </button>
+                )}
             </header>
 
             <div className="space-y-4">

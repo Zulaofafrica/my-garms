@@ -12,3 +12,8 @@ export async function markAsRead(id: string): Promise<boolean> {
     const res = await fetch(`/api/notifications/${id}/read`, { method: 'POST' });
     return res.ok;
 }
+
+export async function markAllAsRead(): Promise<boolean> {
+    const res = await fetch('/api/notifications/read-all', { method: 'POST' });
+    return res.ok;
+}
