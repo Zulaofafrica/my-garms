@@ -62,7 +62,7 @@ const items = [
     },
     {
         title: "Premium Materials",
-        description: "Sourced from the finest mills worldwide, ensuring your custom piece looks and feels exceptional.",
+        description: "Sourced from the finest mills worldwide, or provide your own fabric for a truly personal touch.",
         header: <Skeleton className="bg-gradient-to-br from-orange-500/20 to-yellow-500/20" />,
         icon: <Palette className="h-4 w-4 text-neutral-500" />,
     },

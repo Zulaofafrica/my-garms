@@ -4,6 +4,8 @@ import { CTASection } from "@/components/landing/cta-section";
 import { HowItWorks } from "@/components/landing/how-it-works";
 import { TrendingSection } from "@/components/landing/trending-section";
 
+import { FAQSection } from "@/components/landing/faq-section";
+
 export default function Home() {
   return (
     <main className="flex-1">
@@ -11,6 +13,7 @@ export default function Home() {
       <FeaturesSection />
       <TrendingSection />
       <HowItWorks />
+      <FAQSection />
       <CTASection />
     </main>
   );

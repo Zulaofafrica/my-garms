@@ -171,6 +171,8 @@ export const ordersApi = {
         });
     },
 
+
+
     updateFabricStatus: async (id: string, status: 'shipped' | 'received') => {
         return fetchApi<{ order: Order }>(`/designer/orders/${id}/fabric`, {
             method: 'POST',
@@ -310,6 +312,12 @@ export const designerApi = {
         return fetchApi<{ success: true; message: string }>('/designer/commission/pay', {
             method: 'POST',
             body: JSON.stringify({ orderIds }),
+        });
+    },
+    updateFabricStatus: async (id: string, status: 'shipped' | 'received') => {
+        return fetchApi<{ order: Order }>(`/designer/orders/${id}/fabric`, {
+            method: 'POST',
+            body: JSON.stringify({ status }),
         });
     },
 };
